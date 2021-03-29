@@ -17,29 +17,6 @@
     (remove nil out)
 )
 
-(defun closest (a b-list)
-    (setq distances nil)
-    (loop for b in b-list collect
-        (setq distances(append distances (list (abs (- b a)))))
-    )
-    (setq sorted-distances (copy-list distances))
-    (stable-sort sorted-distances #'<)
-    (nth (nth 0 (get-posn (car sorted-distances) distances)) b-list)
-)
-
-(defun thin-list (a-list)
-    (setq output ())
-    (loop for x in a-list collect
-        (cond
-            (
-                (equal (member x output :test 'equal) nil) 
-                (setq output (append output (list x)))
-            ) 
-        )
-    )
-    output
-)
-
 (defun matrix-nth (matrix posn-list)
     (setq out (copy-list matrix))
     (loop for p in posn-list do
@@ -75,6 +52,11 @@
     )
     (cdr out-vector)
 )
+
+(defun depth (list)
+    (if (listp list)
+        (+ 1 (reduce #'max (mapcar #'depth list) :initial-value 0)) 0))
+
 ; -------------- METHODS ---------------------
 (defmethod! Distortion ((mc-list list) (dist number))
     :initvals '((100 200 300 400 500) 1.125)
@@ -88,20 +70,31 @@
         (* fq0 (expt (/ fq fq0) dist))
     )
 )
-
-(defmethod! Euc-distance ((main-list list) (other-lists list) (weights list))
-    :initvals '((0 1 2 3) ((0 1 2 3) (1 2 3 4) (2 3 4 5)) nil)
+; --------------- Euclidean-distance ---------------
+(defmethod! Euclidean-distance ((a-list list) (b-list list) (weights list))
+    :initvals '((0 1 2 3) (1 2 3 4) nil)
     :indoc '("list" "list of lists" "list (optional)")
     :icon 000
     :doc "Computes the Euclidean distance from main-list to other-lists
 
     NOTE: All lists must have the same length.
     "
-    (loop for l in other-lists collect
-        (euclidean-distance main-list l weights)
+    (if (equal weights nil)
+        (setq weights (repeat-n 1.0 (length a-list)))
     )
-)
+    (setq weights (mapcar #'(lambda (input-list) (/ input-list (list-max weights))) weights))
+    (setq l-depth (depth b-list))
+    (cond 
+        ((eq l-depth 1) (sqrt (reduce #'+ 
+            (loop for a in a-list and b in b-list and w in weights collect 
+                (* w(expt (- b a) 2))
+            ))))
+        ((> l-depth 1) 
+            (loop for b in b-list collect
+                (Euclidean-distance a-list b weights)
+            ))))
 
+; --------------- NNS ---------------
 (defmethod! NNS ((main-list list) (other-lists list) (weights list))
     :initvals '((0 1 2 3) ((0 1 2 3) (1 2 3 4) (2 3 4 5)) nil)
     :indoc '("list" "list of lists" "list (optional)")
@@ -113,13 +106,14 @@
     (setq positions nil) ; create empty positions list
     (setq distances 
         (loop for l in other-lists collect 
-            (list l (euclidean-distance main-list l weights))
+            (list l (Euclidean-distance main-list l weights))
         )
     )
     (stable-sort distances #'< :key #'second)
     (append (list main-list) (car (mat-trans distances)))
 )
 
+; --------------- List-path ---------------
 (defmethod! List-path ((st-list list) (other-lists list) (weights list))
     :initvals '((0 1 2 3) ((0 1 2 3) (1 2 3 4) (2 3 4 5)) nil)
     :indoc '("list (initial)" "list of lists" "list (optional)")
@@ -138,16 +132,37 @@
     output
 )
 
-(defmethod! List-quantize ((source list) (target list))
-    :initvals '((-0.8 0 1.5 2.2 3.6) (0 1 2 3 4 5 6))
-    :indoc '("source (list)" "target (list)")
+; --------------- List-quantize ---------------
+(defmethod! List-quantize ((a number) (b-list list) (accuracy number))
+    :initvals '(2.5 (0 1 2 3 4 5 6) 1)
+    :indoc '("source (list)" "target (list)" "accuracy (optional)")
     :icon 000
-    :doc "Approximates/quantizes the elements from the source list to the closest elements in the target list"  
-    (loop for s in source collect
-        (closest s target)
+    :doc "Approximates/quantizes the elements from the source list to the closest elements in the target list" 
+    (if (equal accuracy nil)
+        (setq accuracy 1)
     )
+    (setq accuracy (clip accuracy 0 1))
+    (setq distances nil)
+    (loop for b in b-list collect
+        (setq distances(append distances (list (abs (- b a)))))
+    )
+    (setq sorted-distances (copy-list distances))
+    (stable-sort sorted-distances #'<)
+    (+ (* accuracy (nth (nth 0 (get-posn (car sorted-distances) distances)) b-list)) (* a (- 1 accuracy)))
 )
 
+(defmethod! List-quantize ((a-list list) (b-list list) (accuracy number))
+    (setq l-depth (depth a-list))
+    (cond 
+        ((eq l-depth 1)
+            (mapcar #'(lambda (input) 
+                (List-quantize input b-list accuracy)) a-list))
+        ((> l-depth 1)
+            (loop for a in a-list collect
+                (List-quantize a b-list accuracy)
+            ))))
+
+; --------------- List-mod ---------------
 (defmethod! List-mod ((input-list list) (n number))
     :initvals '((-3 -2 -1 0 1 2 3) 2)
     :indoc '("list" "mod-n")
@@ -162,9 +177,13 @@
             )
         )))
     )
-    output
-)
+    output)
 
+(defmethod! List-mod ((input-list list) (n list))
+    (mapcar (lambda (input) 
+        (List-mod input-list input)) n))
+
+; --------------- Fill-range ---------------
 (defmethod! Fill-range ((chord-list list) (lower-bound number) (upper-bound number))
     :initvals '((3600 5200 6700 7000) 3600 9000)
     :indoc '("midicent list" "range lower bound" "range upperbound")
@@ -183,7 +202,7 @@
     chord-list
     (band-filter chord-list (list (list lower-bound upper-bound)) 'pass)
 )
-
+; --------------- Shift-posn ---------------
 (defmethod! Shift-posn ((chord-list list) (n-step number))
     :initvals '((3600 5200 6700 7000) 1)
     :indoc '("midicent list" "chordal step")
@@ -195,13 +214,24 @@
     )
 )
 
+(defmethod! Shift-posn ((chord-list list) (n-step list))
+    (mapcar #'(lambda (input) 
+        (Shift-posn chord-list input)) n-step))
+
+; --------------- Posn-map ---------------
 (defmethod! Posn-map ((l list))
     :initvals '(((0 0) (0 1) (1 0) (1 0) (0 0) (1 1)))
-    :indoc '("Returns a list of element positions, based on possible repetitions")
+    :indoc '("list")
     :icon 000
-    :doc "" 
-    (setq thin-l (thin-list l))
-    (loop for x in l collect
-        (position x thin-l :test 'equal)
-    )
-)
+    :doc "Returns a list of element positions, based on possible repetitions" 
+    (setq thin-l nil)
+    (setq out nil)
+    (loop for x in l do
+        (cond (
+            (equal (member x thin-l :test 'equal) nil) 
+            (setq thin-l (append thin-l (list x))))
+        )
+        (setq out (append out (list (position x thin-l :test 'equal))))
+    ) 
+    out)
+

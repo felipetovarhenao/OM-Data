@@ -47,7 +47,7 @@ P,UL,LI, TD {
 <table align=center bgcolor=FFFFFF width=87%><tr>
 <td>
 <h2>EUCLIDEAN-DISTANCE</h2>
-<font size=-1>[FUNCTION]</font><br><br>
+<font size=-1>[GENERIC-FUNCTION]</font><br><br>
 </td><td width=130>
 <img src=./omlogo.gif width=100><br>
 <font size=-2 align=right><a href=index.html>OM-FTH<br> Function Reference</a></font>
@@ -60,8 +60,8 @@ P,UL,LI, TD {
 <td>
 - <font color=333366><b>a-list</b></font>
 </td>
-<td width=20%>&nbsp;</td>
-<td>&nbsp;</td>
+<td>list</td>
+<td>[default = (0 1 2 3)]</td>
 </tr>
 <tr>
 <tr>
@@ -69,22 +69,16 @@ P,UL,LI, TD {
 <td>
 - <font color=333366><b>b-list</b></font>
 </td>
-<td width=20%>&nbsp;</td>
-<td>&nbsp;</td>
+<td>list of lists</td>
+<td>[default = (1 2 3 4)]</td>
 </tr>
-<tr>
-<tr>
-<td>
-<i><b>&optional</b></i><br>
-</td>
-<td colspan=3>&nbsp;</td></tr>
 <tr>
 <tr>
 <td width=40>&nbsp;</td>
 <td>
-- <font color=333366><b>weights?</b></font>
+- <font color=333366><b>weights</b></font>
 </td>
-<td width=20%>&nbsp;</td>
+<td>list (optional)</td>
 <td>&nbsp;</td>
 </tr>
 <tr>
@@ -92,7 +86,10 @@ P,UL,LI, TD {
 </tr>
 <tr><td colspan=2>
 <br><font color=882222><b>Description:</b></font><p>
+Computes the Euclidean distance from main-list to other-lists<br>
 <br>
+    NOTE: All lists must have the same length.<br>
+    <br>
 </p><br><br></td></tr>
 <td class=center colspan=2>
 <center><font size=-2>Auto doc generation by OpenMusic 6.18 © 2021 IRCAM</font></center>
