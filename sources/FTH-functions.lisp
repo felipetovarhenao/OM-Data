@@ -4,7 +4,6 @@
 (in-package :om)
 
 ; -------------- FUNCTIONS -------------------
-
 (defun get-posn (n source)
     (setq i 0)
     (setq out nil)
@@ -25,37 +24,15 @@
     out
 )
 
-(defun ic-vector (mc-list &optional mod-n?)
-    (if (equal mod-n? nil)
-        (setq mod-n? 12)
-    )
-    (setq pc-set (loop for n in mc-list collect (mod n (* 100 mod-n?))))
-    (stable-sort pc-set #'<)
-    (setq i 0)
-    (setq set-size (length pc-set))
-    (setq out-vector '(0 0 0 0 0 0 0))
-    (while (< i set-size)
-        (setq pc-a (nth i pc-set))
-        (setq j (+ 1 i))
-        (while (< j set-size)
-            (setq pc-b (nth j pc-set))
-            (setq mc-i (mod (- pc-b pc-a) 1200))
-            (if (> mc-i 600) 
-                (setq mc-i (- 600 (mod mc-i 600)))
-            )
-            (setq v-pos (om-round (/ mc-i 100)))
-            (setf (nth v-pos out-vector) (+ 1(nth v-pos out-vector)))
-            (print out-vector)
-            (setq j (+ j 1))
-        )
-        (setq i (+ i 1))
-    )
-    (cdr out-vector)
-)
-
 (defun depth (list)
     (if (listp list)
         (+ 1 (reduce #'max (mapcar #'depth list) :initial-value 0)) 0))
+
+(defun random-list (dims minval maxval)
+    (setq v-out nil)
+    (dotimes (x dims)
+        (setq v-out (append v-out (list (om-random minval maxval))))
+    ) v-out)
 
 ; -------------- METHODS ---------------------
 (defmethod! Distortion ((mc-list list) (dist number))
@@ -70,6 +47,7 @@
         (* fq0 (expt (/ fq fq0) dist))
     )
 )
+
 ; --------------- Euclidean-distance ---------------
 (defmethod! Euclidean-distance ((a-list list) (b-list list) (weights list))
     :initvals '((0 1 2 3) (1 2 3 4) nil)
@@ -102,15 +80,15 @@
     :doc "Sorts the lists based on the Nearest-Neighbor Search algorithm.
     
     NOTE: All lists must have the same length."
-    (setq nns-list nil) ; create empty nns-list
-    (setq positions nil) ; create empty positions list
+    (setq nns-list nil) 
+    (setq positions nil)
     (setq distances 
         (loop for l in other-lists collect 
             (list l (Euclidean-distance main-list l weights))
         )
     )
     (stable-sort distances #'< :key #'second)
-    (append (list main-list) (car (mat-trans distances)))
+    (car (mat-trans distances))
 )
 
 ; --------------- List-path ---------------
@@ -126,10 +104,10 @@
     (setq output nil)
     (loop for n in neighbors do
         (setq output (append output (list (car remaining))))
-        (setq remaining (cdr remaining))
+        ; (setq remaining (cdr remaining))
         (setq remaining (NNS (car remaining) (cdr remaining) weights))
     )
-    output
+    (append (list st-list) output)
 )
 
 ; --------------- List-quantize ---------------
@@ -202,6 +180,7 @@
     chord-list
     (band-filter chord-list (list (list lower-bound upper-bound)) 'pass)
 )
+
 ; --------------- Shift-posn ---------------
 (defmethod! Shift-posn ((chord-list list) (n-step number))
     :initvals '((3600 5200 6700 7000) 1)
@@ -235,3 +214,75 @@
     ) 
     out)
 
+; --------------- List-mean ---------------
+(defmethod! List-mean ((l list))
+    :initvals '((0 1 2 3))
+    :indoc '("list")
+    :icon 000
+    :doc "Computes list-wise mean" 
+    (if (> (depth l) 1)
+        (loop for i in l collect
+            (if (not (eq i nil))
+                (List-mean (remove nil i))
+            )
+        )
+        (/ (reduce #'+ l) (length l))
+    )
+)
+
+;--------------- K-means ---------------
+(defmethod! K-means ((data list) (k integer) (weights list))
+    :initvals '(((0 1 0) (-3 -1 2) (4 0 9) (-3 -5 -1) (0 4 -3) (2 1 -4)) 2 nil)
+    :indoc '("list" "k (integer)" "weights (list)")
+    :icon 000
+    :doc "Computes list-wise mean" 
+    
+    ; clip k to suitable range
+    (setq k (clip k 1 (- (length data) 1))) 
+    (setq dim (length (car data)))
+    (setq datasize (length data))
+
+    ; initialize k-centroids
+    (setq k-centroids (mat-trans (loop for d in (mat-trans data) collect
+        (random-list k (* 1.0 (list-min d)) (* 1.0 (list-max d))))))
+
+    ; copy data and add label slots
+    (setq labeled-data 
+        (loop for d in data collect (list d nil)))
+
+    ; ----- K_MEANS routine ----
+    (setq convergence-flag nil)
+    (while (eq convergence-flag nil)
+        ; keep a history of last k-centroids
+        (setq pk-centroids (copy-list k-centroids))
+
+        ; assign a k-centroid to each data item based on proximity
+        (loop for ld in labeled-data and ld-pos from 0 to (- datasize 1) do
+            (setq nearest-k (car (NNS (car ld) k-centroids weights)))
+            (setq ck (position nearest-k k-centroids :test 'equal))
+            (setf (nth ld-pos labeled-data) (list (car ld) ck)))
+        
+        ; update k-centroids 
+        (setq t-labeled-data (mat-trans labeled-data))
+        (loop for ck from 0 to (- k 1) do
+            (setq current-k nil)
+            (loop for ld in labeled-data do
+                (if (eq ck (second ld))
+                    (setq current-k (append current-k (list (first ld))))
+                )
+            )
+            (setq current-k (mat-trans current-k))
+            (if (not (equal current-k nil))
+                (setq new-centroid (List-mean current-k))
+                (setf (nth ck k-centroids) new-centroid)
+            )
+        )
+        (setq convergence-flag (equal k-centroids pk-centroids))
+    )
+    ; group/sort data items by class
+    (loop for i from 0 to (- k 1) collect
+        (list i (remove nil (loop for ld in labeled-data collect
+            (if (eq i (second ld))
+                (car ld)))))
+    )
+)   

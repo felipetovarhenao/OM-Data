@@ -6,22 +6,17 @@
 
 (om::fill-library 
     '(
-        ("1-Basic functions" nil nil (
-            euclidean-distance
-            get-posn
-            closest
-            thin
-            matrix-nth
-            ) nil) 
-        ("2-List processing" nil nil (
-            Euc-distance
+        ("1-List processing" nil nil (
+            Euclidean-distance
             NNS
+            K-means
             List-path
             List-quantize
             List-mod
+            List-mean
             Posn-map
             ) nil)
-        ("3-Midicents" nil nil (
+        ("2-Midicents" nil nil (
             Distortion
             Fill-range
             Shift-posn
