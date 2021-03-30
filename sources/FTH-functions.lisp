@@ -24,6 +24,15 @@
     out
 )
 
+(defun closest (a b-list)
+    (setq distances (loop for b in b-list and n from 0 to (- (length b-list) 1) collect 
+        (list (abs (- b a)) b n)
+    ))
+    (stable-sort distances #'< :key #'first)
+    (setq distances (car distances))
+    (list (second distances) (third distances))
+)
+
 (defun depth (list)
     (if (listp list)
         (+ 1 (reduce #'max (mapcar #'depth list) :initial-value 0)) 0))
@@ -42,16 +51,48 @@
         (setq w-prob nil)
         (loop for d in data do
             (setq distances (loop for kc in k-centroids collect
-                (Euclidean-distance d kc nil)))
+                (expt (Euclidean-distance d kc nil) 2)))
             (setq w-prob (append w-prob (list (list-min distances))))
         )
         (setq new-ck (Nth-wrand data w-prob 1))
         (setq data (remove new-ck data :test 'equal))
         (setq k-centroids (append k-centroids new-ck))
-        (setq x (+ x 1))
-    )
-    k-centroids
-)
+        (setq x (+ x 1)))
+    k-centroids)
+
+(defun position-from-nested (a b-list)
+    (if (atom a)
+        (position a b-list)
+        (if (eq (depth a) 1)
+            (progn
+                (loop for x in a collect
+                    (position x b-list)
+                )
+            )
+            (loop for x in a collect
+                (position-from-nested x b-list)
+            ))))
+
+(defun nth-from-nested (a b-list)
+    (if (atom a)
+        (nth a b-list)
+        (if (eq (depth a) 1)
+            (loop for x in a collect
+                    (nth x b-list))
+            (loop for x in a collect
+                (nth-from-nested x b-list)
+            ))))
+
+(defun mix (a b f)
+    (if (and (atom a) (atom b))
+        (+ (* a (- 1 f)) (* b f))
+        (loop for x in a and y in b collect
+            (mix x y f))))
+
+(defun nested-mix (a b f)
+    (if (or (eq (+ (depth a) (depth b)) 2) (eq (atom a) (atom b)))
+        (mix a b f)
+        (mapcar #'(lambda (in1 in2) (nested-mix in1 in2 f)) a b)))
 
 ; -------------- M E T H O D S ---------------------
 
@@ -277,26 +318,22 @@
     ; clip k to suitable range
     (setq k (clip k 1 (- (length data) 1))) 
     (setq dim (length (car data)))
-    (setq datasize (length data))
-
-    ; initialize k-centroids
-    #|  (setq k-centroids (mat-trans (loop for d in (mat-trans data) collect
-        (random-list k (* 1.0 (list-min d)) (* 1.0 (list-max d)))))) |#
-    (setq k-centroids (k-smart data k))
-    (stable-sort k-centroids #'< :key #'first)
 
     ; copy data and add label slots
     (setq labeled-data 
         (loop for d in data collect (list d nil)))
+
+    ; initialize k-centroids
+    (setq k-centroids (k-smart data k))
+    (stable-sort k-centroids #'< :key #'first)
 
     ; ----- K_MEANS routine ----
     (setq convergence-flag nil)
     (while (eq convergence-flag nil)
         ; keep a history of last k-centroids
         (setq pk-centroids (copy-list k-centroids))
-
         ; assign a k-centroid to each data item based on proximity
-        (loop for ld in labeled-data and ld-pos from 0 to (- datasize 1) do
+        (loop for ld in labeled-data and ld-pos from 0 to (length labeled-data) do
             (setq nearest-k (car (NNS (car ld) k-centroids weights)))
             (setq ck (position nearest-k k-centroids :test 'equal))
             (setf (nth ld-pos labeled-data) (list (car ld) ck)))
@@ -318,12 +355,46 @@
         )
         (setq convergence-flag (equal k-centroids pk-centroids))
     )
+    (stable-sort labeled-data #'< :key #'second)
 
-    ; group/sort data items by class
-    (loop for i from 0 to (- k 1) collect
-        (remove nil (loop for ld in labeled-data collect
-            (if (eq i (second ld))
-                (car ld)))
-        )
+    (setq output (loop for n from 0 to (- k 1) collect nil))
+    (loop for ld in labeled-data do
+        (setf (nth (second ld) output) (append (nth (second ld) output) (list (first ld))))
     )
-)   
+    output
+)
+
+
+;--------------- X-interpolation ---------------
+(defmethod! X-interpolation ((a-list list) (b-list list) (traj list))
+    :initvals '(
+        ((7200 7700 8100) (6200 6700 7100) (7600 8100 7200) (5300 5900 5000) (7900 7200 7600) (5700 5000 5300) (7100 6400 6700) (6000 6500 6900)) 
+        (4500 5700 6402 6900 7286 7602 7868 8100 8304 8486) 
+        (0.0 1.0 0.5))
+    :indoc '("list" "list" "list")
+    :icon 000
+    :doc "Cross-interpolation" 
+    (setq numpts (length a-list))
+    (setq traj (om/ traj (list-max (om-abs traj))))
+    (setq traj (om-clip traj 0.0 1.0))
+    (setq interp-pts (nth-value 2 (om-sample traj numpts)))
+    (setq a-table (remove-dup (flat (copy-list a-list)) 'eq 1))
+    (stable-sort a-table #'<)
+    (setq ab-matrix nil)
+    (loop for a in a-table do 
+        (setq b-target (closest a b-list))
+        (setq ab-matrix (append ab-matrix (list (list a (car b-target))))))
+    (setq ab-positions (position-from-nested a-list (first (mat-trans ab-matrix))))
+    (setq nested-target (nth-from-nested ab-positions (second (mat-trans ab-matrix))))
+    (loop for a in a-list and nt in nested-target and f in interp-pts collect
+        (nested-mix a nt f)))  
+
+#| 
+    TODO:
+        - DTW
+        - KDTree
+        - Chroma count
+        - moments (stdev mean mode median)
+        - sort-data by
+
+ |#
