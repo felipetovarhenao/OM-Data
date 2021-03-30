@@ -15,6 +15,7 @@
             List-mod
             List-mean
             Posn-map
+            Nth-wrand
             ) nil)
         ("2-Midicents" nil nil (
             Distortion

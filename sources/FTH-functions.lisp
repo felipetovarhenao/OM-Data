@@ -34,6 +34,25 @@
         (setq v-out (append v-out (list (om-random minval maxval))))
     ) v-out)
 
+(defun k-smart (data k)
+    (setq k-centroids (list (nth-random data)))
+    (setq data (remove (car k-centroids) data :test 'equal))
+    (setq x 1)
+    (while (< x k)
+        (setq w-prob nil)
+        (loop for d in data do
+            (setq distances (loop for kc in k-centroids collect
+                (Euclidean-distance d kc nil)))
+            (setq w-prob (append w-prob (list (list-min distances))))
+        )
+        (setq new-ck (Nth-wrand data w-prob 1))
+        (setq data (remove new-ck data :test 'equal))
+        (setq k-centroids (append k-centroids new-ck))
+        (setq x (+ x 1))
+    )
+    k-centroids
+)
+
 ; -------------- METHODS ---------------------
 (defmethod! Distortion ((mc-list list) (dist number))
     :initvals '((100 200 300 400 500) 1.125)
@@ -230,6 +249,20 @@
     )
 )
 
+; --------------- Nth-wrand ---------------
+(defmethod! Nth-wrand ((data list) (weights list) (times integer))
+    :initvals '(((1 1 1) (2 2 2) (3 3 3) (4 4 4)) (1 2 3 4) 1)
+    :indoc '("list" "list" "integer")
+    :icon 000
+    :doc "Weighted nth random"
+    (setq datasize (length data))
+    (setq weights (om/ weights (list-max weights)))
+    (setq weights (om-round (om-scale weights (* datasize 5.0) (list-min weights) (list-max weights))))
+    (setq options (flat (loop for d in data and w in weights collect
+        (repeat-n d w)) 1))
+    (repeat-n (nth-random options) times) 
+)
+
 ;--------------- K-means ---------------
 (defmethod! K-means ((data list) (k integer) (weights list))
     :initvals '(((0 1 0) (-3 -1 2) (4 0 9) (-3 -5 -1) (0 4 -3) (2 1 -4)) 2 nil)
@@ -245,8 +278,9 @@
     (setq datasize (length data))
 
     ; initialize k-centroids
-    (setq k-centroids (mat-trans (loop for d in (mat-trans data) collect
-        (random-list k (* 1.0 (list-min d)) (* 1.0 (list-max d))))))
+#|     (setq k-centroids (mat-trans (loop for d in (mat-trans data) collect
+        (random-list k (* 1.0 (list-min d)) (* 1.0 (list-max d)))))) |#
+    (setq k-centroids (k-smart data k))
 
     ; copy data and add label slots
     (setq labeled-data 
@@ -283,7 +317,7 @@
         (setq convergence-flag (equal k-centroids pk-centroids))
         (setq numiter (+ numiter 1))
     )
-
+    (print numiter)
     ; group/sort data items by class
     (loop for i from 0 to (- k 1) collect
         (list i (remove nil (loop for ld in labeled-data collect
