@@ -6,19 +6,22 @@
 
 (om::fill-library 
     '(
-        ("1-List processing" nil nil (
+        ("1-Analysis" nil nil (
             Euclidean-distance
             NNS
             K-means
-            X-interpolation
+            List-mean
+            List-variance
             List-path
+            ) nil)
+        ("2-List processing" nil nil (
+            X-interpolation
             List-quantize
             List-mod
-            List-mean
             Posn-map
             Nth-wrand
             ) nil)
-        ("2-Midicents" nil nil (
+        ("3-Midicents" nil nil (
             Distortion
             Fill-range
             Shift-posn

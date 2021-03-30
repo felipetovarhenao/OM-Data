@@ -106,8 +106,8 @@
     (stable-sort fqlist #'<)
     (setq fq0 (car fqlist))
     (loop for fq in fqlist collect
-        (* fq0 (expt (/ fq fq0) dist))
-    )
+        (* fq0 (expt (/ fq fq0) dist)))
+
 )
 
 ; --------------- Euclidean-distance ---------------
@@ -117,8 +117,7 @@
     :icon 000
     :doc "Computes the Euclidean distance from main-list to other-lists
 
-    NOTE: All lists must have the same length.
-    "
+    NOTE: All lists must have the same length."
     (if (equal weights nil)
         (setq weights (repeat-n 1.0 (length a-list)))
     )
@@ -139,7 +138,7 @@
     :initvals '((0 1 2 3) ((0 1 2 3) (1 2 3 4) (2 3 4 5)) nil)
     :indoc '("list" "list of lists" "list (optional)")
     :icon 000
-    :doc "Sorts the lists based on the Nearest-Neighbor Search algorithm.
+    :doc "Sorts the lists based on the exhaustive nearest neighbor seach algorithm, using Euclidean distance as the sorting measurement.
     
     NOTE: All lists must have the same length."
     (setq nns-list nil) 
@@ -232,15 +231,16 @@
     (setq chord-list (remove-dup (List-mod chord-list 1200) #'eq 1))
     (stable-sort chord-list #'<)
     (setq base-chord (copy-list chord-list))
-    (setq o 1)
-    (setq offset (* 1200 (om-round (/ lower-bound 1200))))
-    (setq numoctaves (+ (om-round (/ (abs (- upper-bound lower-bound)) 1200.0)) 1))
+    (setq o 0)
+    (setq offset (* 1200 (values (floor (/ lower-bound 1200)))))
+    (setq numoctaves (values (ceiling (/ (abs (- upper-bound lower-bound)) 1200.0))))
+    (setq output nil)
     (while (<= o numoctaves)
-        (setq chord-list (append chord-list (om+ base-chord (+ (* o 1200) offset))))
+        (setq output (append output (om+ base-chord (+ (* o 1200) offset))))
         (setq o (+ o 1))
     )
-    chord-list
-    (band-filter chord-list (list (list lower-bound upper-bound)) 'pass)
+    output
+    (band-filter output (list (list lower-bound upper-bound)) 'pass)
 )
 
 ; --------------- Shift-posn ---------------
@@ -288,9 +288,7 @@
                 (List-mean (remove nil i))
             )
         )
-        (/ (reduce #'+ l) (length l))
-    )
-)
+        (/ (reduce #'+ l) (length l))))
 
 ; --------------- Nth-wrand ---------------
 (defmethod! Nth-wrand ((data list) (weights list) (times integer))
@@ -393,6 +391,24 @@
     (setq nested-target (nth-from-nested ab-positions (second (mat-trans ab-matrix))))
     (loop for a in a-list and nt in nested-target and f in interp-pts collect
         (nested-mix a nt f)))  
+
+(defmethod! List-variance ((l list))
+    :initvals '((0 1 2 3))
+    :indoc '("list")
+    :icon 000
+    :doc "Computes the variance value of a list"
+
+    (setq mean (List-mean l))
+    (setq output (loop for x in l collect
+        (expt (- x mean) 2)))
+    (/ (reduce #'+ output) (length l)))
+
+(defmethod! List-stdev ((l list))
+    :initvals '((0 1 2 3))
+    :indoc '("list")
+    :icon 000
+    :doc "Computes the standard deviation value of a list"
+    (sqrt (List-variance l)))
 
 #| 
     TODO:

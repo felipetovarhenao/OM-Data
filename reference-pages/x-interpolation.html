@@ -1,5 +1,5 @@
 <html>
-<head><title>NNS - OM-FTH Reference Documentation</title>
+<head><title>X-INTERPOLATION - OM-FTH Reference Documentation</title>
 <STYLE TYPE="text/css"><!--  
 
 BODY {background-color: #EEEEEE;
@@ -46,7 +46,7 @@ P,UL,LI, TD {
 <br>
 <table align=center bgcolor=FFFFFF width=87%><tr>
 <td>
-<h2>NNS</h2>
+<h2>X-INTERPOLATION</h2>
 <font size=-1>[GENERIC-FUNCTION]</font><br><br>
 </td><td width=130>
 <img src=./omlogo.gif width=100><br>
@@ -58,37 +58,37 @@ P,UL,LI, TD {
 <tr>
 <td width=40>&nbsp;</td>
 <td>
-- <font color=333366><b>main-list</b></font>
+- <font color=333366><b>a-list</b></font>
 </td>
 <td>list</td>
-<td>[default = (0 1 2 3)]</td>
+<td>[default = ((7200 7700 8100) (6200 6700 7100) (7600 8100 7200) (5300 5900 5000) (7900 7200 7600) (5700 5000 5300) (7100 6400 6700) (6000 6500 6900))]</td>
 </tr>
 <tr>
 <tr>
 <td width=40>&nbsp;</td>
 <td>
-- <font color=333366><b>other-lists</b></font>
+- <font color=333366><b>b-list</b></font>
 </td>
-<td>list of lists</td>
-<td>[default = ((0 1 2 3) (1 2 3 4) (2 3 4 5))]</td>
+<td>list</td>
+<td>[default = (4500 5700 6402 6900 7286 7602 7868 8100 8304 8486)]</td>
 </tr>
 <tr>
 <tr>
 <td width=40>&nbsp;</td>
 <td>
-- <font color=333366><b>weights</b></font>
+- <font color=333366><b>traj</b></font>
 </td>
-<td>list (optional)</td>
-<td>&nbsp;</td>
+<td>list</td>
+<td>[default = (0.0 1.0 0.0)]</td>
 </tr>
 <tr>
 </table>
 </tr>
 <tr><td colspan=2>
 <br><font color=882222><b>Description:</b></font><p>
-Sorts the lists based on the exhaustive nearest neighbor seach algorithm, using Euclidean distance as the sorting measurement.<br>
-    <br>
-    NOTE: All lists must have the same length.<br>
+Cross-interpolation between elements of list A and elements of list B, defined by a given interpolation trajectory/path list. The trajectory list must have at least two values, all between 0.0 and 1.0, which represent the normalized percentage of linear interpolation from list A to list B.<br>
+<br>
+    List A and B do not need to have the same length, but list-b must be of depth 1. List A can be a nested list<br>
 </p><br><br></td></tr>
 <td class=center colspan=2>
 <center><font size=-2>Auto doc generation by OpenMusic 6.18 © 2021 IRCAM</font></center>
