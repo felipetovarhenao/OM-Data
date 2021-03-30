@@ -10,6 +10,7 @@
             Euclidean-distance
             NNS
             K-means
+            X-interpolation
             List-path
             List-quantize
             List-mod

@@ -317,21 +317,24 @@
     
     ; clip k to suitable range
     (setq k (clip k 1 (- (length data) 1))) 
-    (setq dim (length (car data)))
 
     ; copy data and add label slots
     (setq labeled-data 
         (loop for d in data collect (list d nil)))
 
-    ; initialize k-centroids
+    ; initialize k-centroids and sort by first element
     (setq k-centroids (k-smart data k))
     (stable-sort k-centroids #'< :key #'first)
 
-    ; ----- K_MEANS routine ----
+    ; convergence flag for loop
     (setq convergence-flag nil)
+
+    ; ----- K_MEANS routine ----
     (while (eq convergence-flag nil)
+
         ; keep a history of last k-centroids
         (setq pk-centroids (copy-list k-centroids))
+
         ; assign a k-centroid to each data item based on proximity
         (loop for ld in labeled-data and ld-pos from 0 to (length labeled-data) do
             (setq nearest-k (car (NNS (car ld) k-centroids weights)))
@@ -353,27 +356,29 @@
                     (setf (nth ck k-centroids) new-centroid))
             )
         )
+        ; stop loop if centroids do not change
         (setq convergence-flag (equal k-centroids pk-centroids))
     )
-    (stable-sort labeled-data #'< :key #'second)
 
+    ; group data by classes
+    (stable-sort labeled-data #'< :key #'second)
     (setq output (loop for n from 0 to (- k 1) collect nil))
     (loop for ld in labeled-data do
-        (setf (nth (second ld) output) (append (nth (second ld) output) (list (first ld))))
-    )
-    output
-)
-
+        (setf (nth (second ld) output) (append (nth (second ld) output) (list (first ld)))))
+    output)
 
 ;--------------- X-interpolation ---------------
 (defmethod! X-interpolation ((a-list list) (b-list list) (traj list))
     :initvals '(
         ((7200 7700 8100) (6200 6700 7100) (7600 8100 7200) (5300 5900 5000) (7900 7200 7600) (5700 5000 5300) (7100 6400 6700) (6000 6500 6900)) 
         (4500 5700 6402 6900 7286 7602 7868 8100 8304 8486) 
-        (0.0 1.0 0.5))
+        (0.0 1.0 0.0))
     :indoc '("list" "list" "list")
     :icon 000
-    :doc "Cross-interpolation" 
+    :doc "Cross-interpolation between elements of list A and elements of list B, defined by a given interpolation trajectory/path list. The trajectory list must have at least two values, all between 0.0 and 1.0, which represent the normalized percentage of linear interpolation from list A to list B.
+
+    List A and B do not need to have the same length, but list-b must be of depth 1. List A can be a nested list"
+
     (setq numpts (length a-list))
     (setq traj (om/ traj (list-max (om-abs traj))))
     (setq traj (om-clip traj 0.0 1.0))
