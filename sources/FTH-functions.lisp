@@ -233,9 +233,11 @@
 ;--------------- K-means ---------------
 (defmethod! K-means ((data list) (k integer) (weights list))
     :initvals '(((0 1 0) (-3 -1 2) (4 0 9) (-3 -5 -1) (0 4 -3) (2 1 -4)) 2 nil)
-    :indoc '("list" "k (integer)" "weights (list)")
+    :indoc '("list" "k (integer)" "weights (optional)")
     :icon 000
-    :doc "Computes list-wise mean" 
+    :doc "Unsupervised data clustering algorithm.
+    
+    NOTE: All data items must have the same size. Weights are optional" 
     
     ; clip k to suitable range
     (setq k (clip k 1 (- (length data) 1))) 
@@ -252,6 +254,7 @@
 
     ; ----- K_MEANS routine ----
     (setq convergence-flag nil)
+    (setq numiter 0)
     (while (eq convergence-flag nil)
         ; keep a history of last k-centroids
         (setq pk-centroids (copy-list k-centroids))
@@ -273,12 +276,14 @@
             )
             (setq current-k (mat-trans current-k))
             (if (not (equal current-k nil))
-                (setq new-centroid (List-mean current-k))
-                (setf (nth ck k-centroids) new-centroid)
+                (progn (setq new-centroid (List-mean current-k))
+                    (setf (nth ck k-centroids) new-centroid))
             )
         )
         (setq convergence-flag (equal k-centroids pk-centroids))
+        (setq numiter (+ numiter 1))
     )
+
     ; group/sort data items by class
     (loop for i from 0 to (- k 1) collect
         (list i (remove nil (loop for ld in labeled-data collect
