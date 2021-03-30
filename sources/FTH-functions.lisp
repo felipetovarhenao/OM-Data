@@ -53,7 +53,9 @@
     k-centroids
 )
 
-; -------------- METHODS ---------------------
+; -------------- M E T H O D S ---------------------
+
+; -------------- Distortion ---------------------
 (defmethod! Distortion ((mc-list list) (dist number))
     :initvals '((100 200 300 400 500) 1.125)
     :indoc '("midicent list" "distortion index")
@@ -278,9 +280,10 @@
     (setq datasize (length data))
 
     ; initialize k-centroids
-#|     (setq k-centroids (mat-trans (loop for d in (mat-trans data) collect
+    #|  (setq k-centroids (mat-trans (loop for d in (mat-trans data) collect
         (random-list k (* 1.0 (list-min d)) (* 1.0 (list-max d)))))) |#
     (setq k-centroids (k-smart data k))
+    (stable-sort k-centroids #'< :key #'first)
 
     ; copy data and add label slots
     (setq labeled-data 
@@ -288,7 +291,6 @@
 
     ; ----- K_MEANS routine ----
     (setq convergence-flag nil)
-    (setq numiter 0)
     (while (eq convergence-flag nil)
         ; keep a history of last k-centroids
         (setq pk-centroids (copy-list k-centroids))
@@ -315,13 +317,13 @@
             )
         )
         (setq convergence-flag (equal k-centroids pk-centroids))
-        (setq numiter (+ numiter 1))
     )
-    (print numiter)
+
     ; group/sort data items by class
     (loop for i from 0 to (- k 1) collect
-        (list i (remove nil (loop for ld in labeled-data collect
+        (remove nil (loop for ld in labeled-data collect
             (if (eq i (second ld))
-                (car ld)))))
+                (car ld)))
+        )
     )
 )   
