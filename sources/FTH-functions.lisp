@@ -229,7 +229,6 @@
     :icon 000
     :doc "Fills the specified range with the midicents from chord-list" 
     (setq chord-list (remove-dup (List-mod chord-list 1200) #'eq 1))
-    (stable-sort chord-list #'<)
     (setq base-chord (copy-list chord-list))
     (setq o 0)
     (setq offset (* 1200 (values (floor (/ lower-bound 1200)))))
@@ -239,7 +238,7 @@
         (setq output (append output (om+ base-chord (+ (* o 1200) offset))))
         (setq o (+ o 1))
     )
-    output
+    (stable-sort output #'< )
     (band-filter output (list (list lower-bound upper-bound)) 'pass)
 )
 
@@ -376,7 +375,7 @@
     :doc "Cross-interpolation between elements of list A and elements of list B, defined by a given interpolation trajectory/path list. The trajectory list must have at least two values, all between 0.0 and 1.0, which represent the normalized percentage of linear interpolation from list A to list B.
 
     List A and B do not need to have the same length, but list-b must be of depth 1. List A can be a nested list"
-
+    (stable-sort b-list #'<)
     (setq numpts (length a-list))
     (setq traj (om/ traj (list-max (om-abs traj))))
     (setq traj (om-clip traj 0.0 1.0))
