@@ -18,12 +18,10 @@
             ) nil)
         ("2-Metrics" nil nil (
             Euclidean-distance
-            List-mean
-            List-variance
-            List-stdev
+            List-moments
             List-Zscore
             ) nil)
-        ("2-List processing" nil nil (
+        ("3-List processing" nil nil (
             X-interpolation
             List-quantize
             List-mod
@@ -32,7 +30,7 @@
             List-wrap
             List-fold
             ) nil)
-        ("3-Midicents" nil nil (
+        ("4-Midicents" nil nil (
             Distortion
             Fill-range
             Shift-posn

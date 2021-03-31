@@ -298,25 +298,35 @@
         )
         (/ (reduce #'+ l) (length l))))
 
-;--------------- List-variance ---------------
-(defmethod! List-variance ((l list))
-    :initvals '((0 1 2 3))
-    :indoc '("list")
+(defmethod! List-moments ((data list) (moments list))
+    :initvals '((0 1 2 3) (0 1 2 3))
+    :indoc '("list" "list")
     :icon 000
-    :doc "Computes the variance value of a list"
+    :numouts 1
+    :outdoc '("mean st-dev skewness kurtosis")
+    :doc "Computes the statistical moments of a list of values: population mean, population standard deviation, skewness and kurtosis" 
+    (if (eq (depth data) 1)
+        (progn 
+            (setq mean (/ (reduce #'+ data) (* 1.0 (length data))))
+            (setq st-dev (sqrt 
+                (/ (reduce #'+ 
+                    (loop for x in data collect
+                        (expt (- x mean) 2))) 
+                    (length data))))
+            (setq skewness
+                (/ (reduce #'+
+                    (loop for x in data collect
+                        (expt (- x mean) 3)
+                    )) 
+                    (* (expt st-dev 3) (length data) 1)))
+            (setq kurtosis
+                (/ (reduce #'+
+                    (loop for x in data collect
+                        (expt (- x mean) 4))) 
+                    (* (expt st-dev 4) (length data))))
 
-    (setq mean (List-mean l))
-    (setq output (loop for x in l collect
-        (expt (- x mean) 2)))
-    (/ (reduce #'+ output) (length l)))
-
-;--------------- List-stdev ---------------
-(defmethod! List-stdev ((l list))
-    :initvals '((0 1 2 3))
-    :indoc '("list")
-    :icon 000
-    :doc "Computes the standard deviation value of a list"
-    (sqrt (List-variance l)))
+            (posn-match (list mean st-dev skewness kurtosis) moments))
+            (loop for d in data collect (List-moments d moments))))
 
 ;--------------- List-Zscore ---------------
 (defmethod! List-Zscore ((x number) (l list))
@@ -324,8 +334,9 @@
     :indoc '("list" "list")
     :icon 000
     :doc "Computes the standard score (a.k.a. z-score) value of a list"  
-    (setq sigma (List-stdev l))
-    (setq mu (List-mean l))
+    (setq m-list (List-moments l '(0 1)))
+    (setq mu (first m-list))
+    (setq sigma (second m-list))
     (/ (- mu x) sigma))
 
 (defmethod! List-Zscore ((x-list list) (l list))
@@ -478,6 +489,7 @@
                     ((and (>= n lower-bound) (< n upper-bound)) n))))
         (loop for x in in-list collect
             (List-wrap x lower-bound upper-bound))))
+
 
 #| 
     TODO:
