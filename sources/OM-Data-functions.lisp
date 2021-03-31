@@ -1,9 +1,13 @@
-; OM-FTH functions
-; by Felipe Tovar-Henao
+#|--------------------------------- * 
+|     OM-Data library functions     |
+|   [www.felipe-tovar-henao.com]    |
+|               2021                |
+* --------------------------------- *
+|#
 
 (in-package :om)
 
-; -------------- FUNCTIONS -------------------
+; -------------- (HIDDEN) FUNCTIONS -------------------
 (defun get-posn (n source)
     (setq i 0)
     (setq out nil)
@@ -102,12 +106,18 @@
     :indoc '("midicent list" "distortion index")
     :icon 000
     :doc "Takes a list of midicents and applies spectral distortion (compression/expansion) to it, according to a distortion index."
-    (setq fqlist (mc->f mc-list))
-    (stable-sort fqlist #'<)
-    (setq fq0 (car fqlist))
-    (loop for fq in fqlist collect
-        (* fq0 (expt (/ fq fq0) dist)))
-
+    (if (eq (depth mc-list) 1)
+        (progn
+            (setq fqlist (mc->f mc-list))
+            (stable-sort fqlist #'<)
+            (setq fq0 (list-min fqlist))
+            (setq output (loop for fq in fqlist collect
+                (* fq0 (expt (/ fq fq0) dist))))
+            (f->mc output))
+        (loop for mc-l in mc-list collect
+            (Distortion mc-l dist)
+        )
+    )
 )
 
 ; --------------- Euclidean-distance ---------------
@@ -152,8 +162,8 @@
     (car (mat-trans distances))
 )
 
-; --------------- List-path ---------------
-(defmethod! List-path ((st-list list) (other-lists list) (weights list))
+; --------------- Optimal-sorting ---------------
+(defmethod! Optimal-sorting ((st-list list) (other-lists list) (weights list))
     :initvals '((0 1 2 3) ((0 1 2 3) (1 2 3 4) (2 3 4 5)) nil)
     :indoc '("list (initial)" "list of lists" "list (optional)")
     :icon 000
@@ -198,8 +208,7 @@
                 (List-quantize input b-list accuracy)) a-list))
         ((> l-depth 1)
             (loop for a in a-list collect
-                (List-quantize a b-list accuracy)
-            ))))
+                (List-quantize a b-list accuracy)))))
 
 ; --------------- List-mod ---------------
 (defmethod! List-mod ((input-list list) (n number))
@@ -288,6 +297,39 @@
             )
         )
         (/ (reduce #'+ l) (length l))))
+
+;--------------- List-variance ---------------
+(defmethod! List-variance ((l list))
+    :initvals '((0 1 2 3))
+    :indoc '("list")
+    :icon 000
+    :doc "Computes the variance value of a list"
+
+    (setq mean (List-mean l))
+    (setq output (loop for x in l collect
+        (expt (- x mean) 2)))
+    (/ (reduce #'+ output) (length l)))
+
+;--------------- List-stdev ---------------
+(defmethod! List-stdev ((l list))
+    :initvals '((0 1 2 3))
+    :indoc '("list")
+    :icon 000
+    :doc "Computes the standard deviation value of a list"
+    (sqrt (List-variance l)))
+
+;--------------- List-Zscore ---------------
+(defmethod! List-Zscore ((x number) (l list))
+    :initvals '((0 3 6) (0 1 2 3 4 5 6))
+    :indoc '("list" "list")
+    :icon 000
+    :doc "Computes the standard score (a.k.a. z-score) value of a list"  
+    (setq sigma (List-stdev l))
+    (setq mu (List-mean l))
+    (/ (- mu x) sigma))
+
+(defmethod! List-Zscore ((x-list list) (l list))
+    (mapcar #'(lambda (input) (List-Zscore input l)) x-list))
 
 ; --------------- Nth-wrand ---------------
 (defmethod! Nth-wrand ((data list) (weights list) (times integer))
@@ -391,23 +433,51 @@
     (loop for a in a-list and nt in nested-target and f in interp-pts collect
         (nested-mix a nt f)))  
 
-(defmethod! List-variance ((l list))
-    :initvals '((0 1 2 3))
-    :indoc '("list")
+;--------------- List-wrap---------------
+(defmethod! List-wrap ((in-list list) (lower-bound number) (upper-bound number))
+    :initvals '((0 1 2 3 4 5 6 7 8 9 10 11 12) 2 6)
+    :indoc '("list" "integer" "integer")
     :icon 000
-    :doc "Computes the variance value of a list"
+    :doc "Wraps the values of a list around a given range"
+    (if (eq (depth in-list) 1)
+        (progn 
+            (setq wrap-range (abs (- upper-bound lower-bound)))
+            (loop for n in in-list collect 
+                (cond 
+                    ((< n lower-bound) (- upper-bound (mod (- lower-bound n) wrap-range)))
+                    ((>= n upper-bound) (+ lower-bound (mod (- n upper-bound) wrap-range)))
+                    ((and (>= n lower-bound) (< n upper-bound)) n))))
+        (loop for n in in-list collect
+            (List-wrap n lower-bound upper-bound))))
 
-    (setq mean (List-mean l))
-    (setq output (loop for x in l collect
-        (expt (- x mean) 2)))
-    (/ (reduce #'+ output) (length l)))
-
-(defmethod! List-stdev ((l list))
-    :initvals '((0 1 2 3))
-    :indoc '("list")
+;--------------- List-fold---------------
+(defmethod! List-fold ((in-list list) (lower-bound number) (upper-bound number))
+    :initvals '((0 1 2 3 4 5 6 7 8 9 10 11 12) 2 6)
+    :indoc '("list" "integer" "integer")
     :icon 000
-    :doc "Computes the standard deviation value of a list"
-    (sqrt (List-variance l)))
+    :doc "Folds the values of a list around a given range"
+    (if (eq (depth in-list) 1)
+        (progn 
+            (setq wrap-range (abs (- upper-bound lower-bound)))
+            (loop for n in in-list collect 
+                (cond 
+                    ((< n lower-bound) 
+                        (progn 
+                            (setq diff (- lower-bound n))
+                            (setq mode (nth-value 0 (om// diff wrap-range)))
+                                (if (evenp mode)
+                                    (+ lower-bound (mod (- lower-bound n) wrap-range))
+                                    (- upper-bound (mod (- lower-bound n) wrap-range)))))
+                    ((>= n upper-bound) 
+                        (progn 
+                            (setq diff (- n upper-bound))
+                            (setq mode (nth-value 0 (om// diff wrap-range)))
+                            (if (evenp mode)
+                                (- upper-bound (mod (- n upper-bound) wrap-range))
+                                (+ lower-bound (mod (- n upper-bound) wrap-range)))))
+                    ((and (>= n lower-bound) (< n upper-bound)) n))))
+        (loop for x in in-list collect
+            (List-wrap x lower-bound upper-bound))))
 
 #| 
     TODO:
