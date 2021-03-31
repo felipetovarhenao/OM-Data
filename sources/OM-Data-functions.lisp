@@ -105,7 +105,7 @@
     :initvals '((100 200 300 400 500) 1.125)
     :indoc '("midicent list" "distortion index")
     :icon 000
-    :doc "Takes a list of midicents and applies spectral distortion (compression/expansion) to it, according to a distortion index."
+    :doc "Applies spectral distortion to a list of midicents, given a distortion index d. In other words, it expands or compresses the intervals in relation to the lowest midicent value in the input list."
     (if (eq (depth mc-list) 1)
         (progn
             (setq fqlist (mc->f mc-list))
@@ -125,7 +125,7 @@
     :initvals '((0 1 2 3) (1 2 3 4) nil)
     :indoc '("list" "list of lists" "list (optional)")
     :icon 000
-    :doc "Computes the Euclidean distance from main-list to other-lists
+    :doc "Computes the Euclidean distance from one list to a list of lists.
 
     NOTE: All lists must have the same length."
     (if (equal weights nil)
@@ -167,7 +167,7 @@
     :initvals '((0 1 2 3) ((0 1 2 3) (1 2 3 4) (2 3 4 5)) nil)
     :indoc '("list (initial)" "list of lists" "list (optional)")
     :icon 000
-    :doc "Sorts all the lists such that the element-wise distance between resulting adjacent lists is minimal. Helpful for sorting chords (mc lists) for optimal voice leading.
+    :doc "Sorts a list of lists such that the distance between adjacent lists is optimally minimized, given a starting list.
     
     NOTE: All lists must have the same length."  
     (setq neighbors (NNS st-list other-lists weights))
@@ -183,10 +183,10 @@
 
 ; --------------- List-quantize ---------------
 (defmethod! List-quantize ((a number) (b-list list) (accuracy number))
-    :initvals '(2.5 (0 1 2 3 4 5 6) 1)
+    :initvals '(2.5 (0 1 2 3 4 5 6) nil)
     :indoc '("source (list)" "target (list)" "accuracy (optional)")
     :icon 000
-    :doc "Approximates/quantizes the elements from the source list to the closest elements in the target list" 
+    :doc "Approximates/quantizes the values from the source list to the closest elements in the target list, given an normalized accuracy percentage (optional) between 0.0 and 1.0" 
     (if (equal accuracy nil)
         (setq accuracy 1)
     )
