@@ -496,7 +496,7 @@
     :initvals '((6000 6400 6700 7000 7200))
     :indoc '("list")
     :icon 000
-    :doc "Wraps the values of a list around a given range"
+    :doc "Recursively computes the chroma count of a list of midicents"
     (setq chroma-vector (repeat-n 0 12))
     (if (eq (depth mc) 1)
         (progn 
@@ -506,6 +506,28 @@
                 (setf (nth posn chroma-vector) (+ (nth posn chroma-vector) 1)))
             chroma-vector)
         (mapcar #'(lambda (input) (Chroma-count input)) mc)))
+
+;--------------- IC-vector ---------------
+(defmethod! IC-vector ((mc list))
+    :initvals '((6000 6400 6700 7000 7200))
+    :indoc '("list")
+    :icon 000
+    :doc "Recursively computes the interval vector of a list of midicents"
+    (if (and (eq (depth mc) 1) (> (length mc) 1))
+        (progn 
+            (setq icv (repeat-n 0 7))
+            (setq times 0)
+            (setq pc-list (om-round (om/ (List-mod mc 1200) 100) 1))
+            (loop for pc in pc-list do   
+                (loop for x from times to (- (length mc) 1) do
+                    (setq interval (abs (- (nth x pc-list) pc)))
+                    (setq posn (List-fold (nth-value 0 (round interval)) 0 6))
+                    (setf (nth posn icv) (+ (nth posn icv) 1)))
+                (setq times (+ times 1)))
+            (cdr icv))
+        (mapcar #'(lambda (input) (IC-vector input)) mc)))
+
+    
 #| 
     TODO:
         - DTW

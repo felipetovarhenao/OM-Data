@@ -37,6 +37,5 @@
             Fill-range
             Shift-posn
             Chroma-count
-            ) nil)
-    )
-) ; 
+            IC-vector
+            ) nil)))
