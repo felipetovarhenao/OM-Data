@@ -36,6 +36,7 @@
             Distortion
             Fill-range
             Shift-posn
+            Chroma-count
             ) nil)
     )
 ) ; 

@@ -191,10 +191,7 @@
         (setq output (append output (list
             (cond 
                 ((< i 0) (* (mod (abs i) n) (/ i (abs i))))
-                ((>= i 0) (mod i n))
-            )
-        )))
-    )
+                ((>= i 0) (mod i n)))))))
     output)
 
 (defmethod! List-mod ((input-list list) (n list))
@@ -494,6 +491,21 @@
 (defmethod! List-fold ((val list) (lower-bound number) (upper-bound number))
     (mapcar #'(lambda (input) (List-fold input lower-bound upper-bound)) val))
 
+;--------------- Chroma-count ---------------
+(defmethod! Chroma-count ((mc list))
+    :initvals '((6000 6400 6700 7000 7200))
+    :indoc '("list")
+    :icon 000
+    :doc "Wraps the values of a list around a given range"
+    (setq chroma-vector (repeat-n 0 12))
+    (if (eq (depth mc) 1)
+        (progn 
+            (setq pc-list (om/ (List-mod mc 1200) 100)) 
+            (loop for pc in pc-list do    
+                (setq posn (nth-value 0 (round pc)))
+                (setf (nth posn chroma-vector) (+ (nth posn chroma-vector) 1)))
+            chroma-vector)
+        (mapcar #'(lambda (input) (Chroma-count input)) mc)))
 #| 
     TODO:
         - DTW
