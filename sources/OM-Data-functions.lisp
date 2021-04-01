@@ -175,7 +175,6 @@
     (setq output nil)
     (loop for n in neighbors do
         (setq output (append output (list (car remaining))))
-        ; (setq remaining (cdr remaining))
         (setq remaining (NNS (car remaining) (cdr remaining) weights))
     )
     (append (list st-list) output)
@@ -439,8 +438,8 @@
     (loop for a in a-table do 
         (setq b-target (closest a b-list))
         (setq ab-matrix (append ab-matrix (list (list a (car b-target))))))
-    (setq ab-positions (position-from-nested a-list (first (mat-trans ab-matrix))))
-    (setq nested-target (nth-from-nested ab-positions (second (mat-trans ab-matrix))))
+    (setq ab-positions (Nested-position a-list (first (mat-trans ab-matrix))))
+    (setq nested-target (Nested-nth ab-positions (second (mat-trans ab-matrix))))
     (loop for a in a-list and nt in nested-target and f in interp-pts collect
         (nested-mix a nt f)))  
 
@@ -490,6 +489,48 @@
         (loop for x in in-list collect
             (List-wrap x lower-bound upper-bound))))
 
+
+; -------------- Nested-position ---------------------
+(defmethod! Nested-position ((a list) (b-list list))
+    :initvals '((("a") "b" (("c") "d") ((("e")))) ("a" "b" "c" "d" "e"))
+    :indoc '("list" "integer")
+    :icon 000
+    :doc "Finds the position in list B for every element in list A. List B must be of depth 1"
+    (if (eq (depth a) 1)
+        (loop for x in a collect
+            (position x b-list :test 'equal))
+        (loop for x in a collect
+            (Nested-position x b-list))))
+
+(defmethod! Nested-position ((a number) (b-list list))
+    (position a b-list :test 'equal))
+
+(defmethod! Nested-position ((a string) (b-list list))
+    (position a b-list :test 'equal))
+
+(defmethod! Nested-position ((a symbol) (b-list list))
+    (position a b-list :test 'equal))
+    
+; -------------- Nested-nth ---------------------
+(defmethod! Nested-nth ((a list) (b-list list))
+    :initvals '(((0) 1 ((2) 3) (((4)))) ("a" "b" "c" "d" "e"))
+    :indoc '("list" "integer")
+    :icon 000
+    :doc "Finds the nth element in list B for every position in list A. List B must be of depth 1"
+    (if (eq (depth a) 1)
+        (loop for x in a collect
+            (nth x b-list))
+        (loop for x in a collect
+            (Nested-nth x b-list))))
+
+(defmethod! Nested-nth ((a number) (b-list list))
+    (nth a b-list))
+
+(defmethod! Nested-nth ((a string) (b-list list))
+    (nth a b-list))
+
+(defmethod! Nested-nth ((a symbol) (b-list list))
+    (nth a b-list))
 
 #| 
     TODO:
