@@ -64,29 +64,6 @@
         (setq x (+ x 1)))
     k-centroids)
 
-(defun position-from-nested (a b-list)
-    (if (atom a)
-        (position a b-list)
-        (if (eq (depth a) 1)
-            (progn
-                (loop for x in a collect
-                    (position x b-list)
-                )
-            )
-            (loop for x in a collect
-                (position-from-nested x b-list)
-            ))))
-
-(defun nth-from-nested (a b-list)
-    (if (atom a)
-        (nth a b-list)
-        (if (eq (depth a) 1)
-            (loop for x in a collect
-                    (nth x b-list))
-            (loop for x in a collect
-                (nth-from-nested x b-list)
-            ))))
-
 (defun mix (a b f)
     (if (and (atom a) (atom b))
         (+ (* a (- 1 f)) (* b f))
