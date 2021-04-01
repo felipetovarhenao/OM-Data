@@ -303,8 +303,7 @@
                         (* (expt st-dev 4) (length data))))
 
                 (posn-match (list mean st-dev skewness kurtosis) moments))
-            (posn-match (list (car data) 0 0 0) moments)
-        )
+            (posn-match (list (car data) 0 nil nil) moments))
             (loop for d in data collect (List-moments d moments))))
 
 ;--------------- List-Zscore ---------------
@@ -421,60 +420,13 @@
     (loop for a in a-list and nt in nested-target and f in interp-pts collect
         (nested-mix a nt f)))  
 
-;--------------- List-wrap---------------
-(defmethod! List-wrap ((in-list list) (lower-bound number) (upper-bound number))
-    :initvals '((0 1 2 3 4 5 6 7 8 9 10 11 12) 2 6)
-    :indoc '("list" "integer" "integer")
-    :icon 000
-    :doc "Wraps the values of a list around a given range"
-    (if (eq (depth in-list) 1)
-        (progn 
-            (setq wrap-range (abs (- upper-bound lower-bound)))
-            (loop for n in in-list collect 
-                (cond 
-                    ((< n lower-bound) (- upper-bound (mod (- lower-bound n) wrap-range)))
-                    ((>= n upper-bound) (+ lower-bound (mod (- n upper-bound) wrap-range)))
-                    ((and (>= n lower-bound) (< n upper-bound)) n))))
-        (loop for n in in-list collect
-            (List-wrap n lower-bound upper-bound))))
-
-;--------------- List-fold---------------
-(defmethod! List-fold ((in-list list) (lower-bound number) (upper-bound number))
-    :initvals '((0 1 2 3 4 5 6 7 8 9 10 11 12) 2 6)
-    :indoc '("list" "integer" "integer")
-    :icon 000
-    :doc "Folds the values of a list around a given range"
-    (if (eq (depth in-list) 1)
-        (progn 
-            (setq wrap-range (abs (- upper-bound lower-bound)))
-            (loop for n in in-list collect 
-                (cond 
-                    ((< n lower-bound) 
-                        (progn 
-                            (setq diff (- lower-bound n))
-                            (setq mode (nth-value 0 (om// diff wrap-range)))
-                                (if (evenp mode)
-                                    (+ lower-bound (mod (- lower-bound n) wrap-range))
-                                    (- upper-bound (mod (- lower-bound n) wrap-range)))))
-                    ((>= n upper-bound) 
-                        (progn 
-                            (setq diff (- n upper-bound))
-                            (setq mode (nth-value 0 (om// diff wrap-range)))
-                            (if (evenp mode)
-                                (- upper-bound (mod (- n upper-bound) wrap-range))
-                                (+ lower-bound (mod (- n upper-bound) wrap-range)))))
-                    ((and (>= n lower-bound) (< n upper-bound)) n))))
-        (loop for x in in-list collect
-            (List-wrap x lower-bound upper-bound))))
-
-
 ; -------------- Nested-position ---------------------
 (defmethod! Nested-position ((a list) (b-list list))
     :initvals '((("a") "b" (("c") "d") ((("e")))) ("a" "b" "c" "d" "e"))
     :indoc '("list" "integer")
     :icon 000
     :doc "Finds the position in list B for every element in list A. List B must be of depth 1"
-    (if (eq (depth a) 1)
+    (if (eq (depth a) (depth b-list))
         (loop for x in a collect
             (position x b-list :test 'equal))
         (loop for x in a collect
@@ -510,17 +462,66 @@
 (defmethod! Nested-nth ((a symbol) (b-list list))
     (nth a b-list))
 
+;--------------- List-wrap---------------
+(defmethod! List-wrap ((val number) (lower-bound number) (upper-bound number))
+    :initvals '(8 2 6)
+    :indoc '("list" "number" "number")
+    :icon 000
+    :doc "Wraps the values of a list around a given range"
+    (setq range (abs (- upper-bound lower-bound)))
+    (setq out val)
+    (cond
+        (
+            (< val lower-bound)
+            (progn
+                (setq diff (mod (abs (- lower-bound val)) range))
+                (setq out (- upper-bound diff))))
+        (
+            (>= val upper-bound)
+            (progn
+                (setq diff (mod (abs (- upper-bound val)) range))
+                (setq out (+ lower-bound diff)))))
+    out
+)
 
-#| 
-    FOLD-WRAP NEED FIXING
-    make atom version first and then recursive copies
- |#
+(defmethod! List-wrap ((val list) (lower-bound number) (upper-bound number))
+    (mapcar #'(lambda (input) (List-wrap input lower-bound upper-bound)) val))
+
+;--------------- List-fold---------------
+(defmethod! List-fold ((val number) (lower-bound number) (upper-bound number))
+    :initvals '(8 2 6)
+    :indoc '("list" "number" "number")
+    :icon 000
+    :doc "Wraps the values of a list around a given range"
+    (setq range (abs (- upper-bound lower-bound)))
+    (setq out val)
+    (cond
+        (
+            (< val lower-bound)
+            (setq diff (abs (- lower-bound val)))
+            (setq mode (evenp (nth-value 0 (om// diff range))))
+            (setq diff (mod diff range))
+            (if (eq mode t)
+                (setq out (+ lower-bound diff))
+                (setq out (- upper-bound diff))))
+        (
+            (>= val upper-bound)
+            (setq diff (abs (- upper-bound val)))
+            (setq mode (evenp (nth-value 0 (om// diff range))))
+            (setq diff (mod diff range))
+            (if (eq mode t)
+                (setq out (- upper-bound diff))
+                (setq out (+ lower-bound diff)))))
+    out)
+
+(defmethod! List-fold ((val list) (lower-bound number) (upper-bound number))
+    (mapcar #'(lambda (input) (List-fold input lower-bound upper-bound)) val))
+
 #| 
     TODO:
         - DTW
         - KDTree
         - Chroma count
-        - moments (stdev mean mode median)
         - sort-data by
 
  |#

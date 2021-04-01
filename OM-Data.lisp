@@ -29,6 +29,8 @@
             Nth-wrand
             List-wrap
             List-fold
+            Nested-position
+            Nested-nth
             ) nil)
         ("4-Midicents" nil nil (
             Distortion

@@ -1,5 +1,5 @@
 <html>
-<head><title>LIST-FOLD - OM-Data Reference Documentation</title>
+<head><title>NESTED-POSITION - OM-Data Reference Documentation</title>
 <STYLE TYPE="text/css"><!--  
 
 BODY {background-color: #EEEEEE;
@@ -46,7 +46,7 @@ P,UL,LI, TD {
 <br>
 <table align=center bgcolor=FFFFFF width=87%><tr>
 <td>
-<h2>LIST-FOLD</h2>
+<h2>NESTED-POSITION</h2>
 <font size=-1>[GENERIC-FUNCTION]</font><br><br>
 </td><td width=130>
 <img src=./omlogo.gif width=100><br>
@@ -58,35 +58,26 @@ P,UL,LI, TD {
 <tr>
 <td width=40>&nbsp;</td>
 <td>
-- <font color=333366><b>val</b></font>
+- <font color=333366><b>a</b></font>
 </td>
 <td>list</td>
-<td>[default = 8]</td>
+<td>[default = (("a") "b" (("c") "d") ((("e"))))]</td>
 </tr>
 <tr>
 <tr>
 <td width=40>&nbsp;</td>
 <td>
-- <font color=333366><b>lower-bound</b></font>
+- <font color=333366><b>b-list</b></font>
 </td>
-<td>number</td>
-<td>[default = 2]</td>
-</tr>
-<tr>
-<tr>
-<td width=40>&nbsp;</td>
-<td>
-- <font color=333366><b>upper-bound</b></font>
-</td>
-<td>number</td>
-<td>[default = 6]</td>
+<td>integer</td>
+<td>[default = ("a" "b" "c" "d" "e")]</td>
 </tr>
 <tr>
 </table>
 </tr>
 <tr><td colspan=2>
 <br><font color=882222><b>Description:</b></font><p>
-Wraps the values of a list around a given range<br>
+Finds the position in list B for every element in list A. List B must be of depth 1<br>
 </p><br><br></td></tr>
 <td class=center colspan=2>
 <center><font size=-2>Auto doc generation by OpenMusic 6.18 © 2021 IRCAM</font></center>
