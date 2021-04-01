@@ -115,10 +115,7 @@
                 (* fq0 (expt (/ fq fq0) dist))))
             (f->mc output))
         (loop for mc-l in mc-list collect
-            (Distortion mc-l dist)
-        )
-    )
-)
+            (Distortion mc-l dist))))
 
 ; --------------- Euclidean-distance ---------------
 (defmethod! Euclidean-distance ((a-list list) (b-list list) (weights list))
@@ -140,8 +137,7 @@
             ))))
         ((> l-depth 1) 
             (loop for b in b-list collect
-                (Euclidean-distance a-list b weights)
-            ))))
+                (Euclidean-distance a-list b weights)))))
 
 ; --------------- NNS ---------------
 (defmethod! NNS ((main-list list) (other-lists list) (weights list))
@@ -159,12 +155,11 @@
         )
     )
     (stable-sort distances #'< :key #'second)
-    (car (mat-trans distances))
-)
+    (car (mat-trans distances)))
 
 ; --------------- Optimal-sorting ---------------
 (defmethod! Optimal-sorting ((st-list list) (other-lists list) (weights list))
-    :initvals '((0 1 2 3) ((0 1 2 3) (1 2 3 4) (2 3 4 5)) nil)
+    :initvals '((0 0 0 2) ((0 1 2 3) (1 2 3 4) (2 3 4 5)) nil)
     :indoc '("list (initial)" "list of lists" "list (optional)")
     :icon 000
     :doc "Sorts a list of lists such that the distance between adjacent lists is optimally minimized, given a starting list.
@@ -177,8 +172,7 @@
         (setq output (append output (list (car remaining))))
         (setq remaining (NNS (car remaining) (cdr remaining) weights))
     )
-    (append (list st-list) output)
-)
+    (append (list st-list) output))
 
 ; --------------- List-quantize ---------------
 (defmethod! List-quantize ((a number) (b-list list) (accuracy number))
@@ -247,8 +241,7 @@
         (setq o (+ o 1))
     )
     (stable-sort output #'< )
-    (band-filter output (list (list lower-bound upper-bound)) 'pass)
-)
+    (band-filter output (list (list lower-bound upper-bound)) 'pass))
 
 ; --------------- Shift-posn ---------------
 (defmethod! Shift-posn ((chord-list list) (n-step number))
@@ -258,9 +251,7 @@
     :doc "shifts a collection of midicents by n steps along itself, assuming octave equivalence between pitches." 
     (setq filled-range (Fill-range chord-list 0 20000))
     (loop for note in chord-list collect
-        (nth (+ (position note filled-range) n-step) filled-range)
-    )
-)
+        (nth (+ (position note filled-range) n-step) filled-range)))
 
 (defmethod! Shift-posn ((chord-list list) (n-step list))
     (mapcar #'(lambda (input) 
@@ -283,20 +274,6 @@
     ) 
     out)
 
-; --------------- List-mean ---------------
-(defmethod! List-mean ((l list))
-    :initvals '((0 1 2 3))
-    :indoc '("list")
-    :icon 000
-    :doc "Computes list-wise mean" 
-    (if (> (depth l) 1)
-        (loop for i in l collect
-            (if (not (eq i nil))
-                (List-mean (remove nil i))
-            )
-        )
-        (/ (reduce #'+ l) (length l))))
-
 (defmethod! List-moments ((data list) (moments list))
     :initvals '((0 1 2 3) (0 1 2 3))
     :indoc '("list" "list")
@@ -305,26 +282,29 @@
     :outdoc '("mean st-dev skewness kurtosis")
     :doc "Computes the statistical moments of a list of values: population mean, population standard deviation, skewness and kurtosis" 
     (if (eq (depth data) 1)
-        (progn 
-            (setq mean (/ (reduce #'+ data) (* 1.0 (length data))))
-            (setq st-dev (sqrt 
-                (/ (reduce #'+ 
-                    (loop for x in data collect
-                        (expt (- x mean) 2))) 
-                    (length data))))
-            (setq skewness
-                (/ (reduce #'+
-                    (loop for x in data collect
-                        (expt (- x mean) 3)
-                    )) 
-                    (* (expt st-dev 3) (length data) 1)))
-            (setq kurtosis
-                (/ (reduce #'+
-                    (loop for x in data collect
-                        (expt (- x mean) 4))) 
-                    (* (expt st-dev 4) (length data))))
+        (if (> (length data) 1)
+            (progn 
+                (setq mean (/ (reduce #'+ data) (* 1.0 (length data))))
+                (setq st-dev (sqrt 
+                    (/ (reduce #'+ 
+                        (loop for x in data collect
+                            (expt (- x mean) 2))) 
+                        (length data))))
+                (setq skewness
+                    (/ (reduce #'+
+                        (loop for x in data collect
+                            (expt (- x mean) 3)
+                        )) 
+                        (* (expt st-dev 3) (length data) 1)))
+                (setq kurtosis
+                    (/ (reduce #'+
+                        (loop for x in data collect
+                            (expt (- x mean) 4))) 
+                        (* (expt st-dev 4) (length data))))
 
-            (posn-match (list mean st-dev skewness kurtosis) moments))
+                (posn-match (list mean st-dev skewness kurtosis) moments))
+            (posn-match (list (car data) 0 0 0) moments)
+        )
             (loop for d in data collect (List-moments d moments))))
 
 ;--------------- List-Zscore ---------------
@@ -352,8 +332,7 @@
     (setq weights (om-round (om-scale weights (* datasize 5.0) (list-min weights) (list-max weights))))
     (setq options (flat (loop for d in data and w in weights collect
         (repeat-n d w)) 1))
-    (repeat-n (nth-random options) times) 
-)
+    (repeat-n (nth-random options) times))
 
 ;--------------- K-means ---------------
 (defmethod! K-means ((data list) (k integer) (weights list))
@@ -401,13 +380,12 @@
             )
             (setq current-k (mat-trans current-k))
             (if (not (equal current-k nil))
-                (progn (setq new-centroid (List-mean current-k))
-                    (setf (nth ck k-centroids) new-centroid))
-            )
-        )
+                (progn 
+                    (setq new-centroid (flat (List-moments current-k '(0))))
+                    (setf (nth ck k-centroids) new-centroid))))
+
         ; stop loop if centroids do not change
-        (setq convergence-flag (equal k-centroids pk-centroids))
-    )
+        (setq convergence-flag (equal k-centroids pk-centroids)))
 
     ; group data by classes
     (stable-sort labeled-data #'< :key #'second)
@@ -532,6 +510,11 @@
 (defmethod! Nested-nth ((a symbol) (b-list list))
     (nth a b-list))
 
+
+#| 
+    FOLD-WRAP NEED FIXING
+    make atom version first and then recursive copies
+ |#
 #| 
     TODO:
         - DTW
