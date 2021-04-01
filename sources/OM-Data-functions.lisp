@@ -20,14 +20,6 @@
     (remove nil out)
 )
 
-(defun matrix-nth (matrix posn-list)
-    (setq out (copy-list matrix))
-    (loop for p in posn-list do
-        (setq out (nth p out))
-    )
-    out
-)
-
 (defun closest (a b-list)
     (setq distances (loop for b in b-list and n from 0 to (- (length b-list) 1) collect 
         (list (abs (- b a)) b n)
@@ -527,12 +519,120 @@
             (cdr icv))
         (mapcar #'(lambda (input) (IC-vector input)) mc)))
 
-    
+(defun dtw-path-cost (a-list b-list)
+    ; build cost matrix
+    (setq matrix (make-array (list (length a-list) (length b-list))))
+    (loop for a in a-list and x from 0 to (length a-list) do
+        (loop for b in b-list and y from 0 to (length b-list) do
+            (if (> x 0) 
+                (setq leftval (aref matrix (- x 1) y))
+                (setq leftval nil))
+            (if (> y 0) 
+                (setq topval (aref matrix x (- y 1)))
+                (setq topval nil)) 
+            (if (and (> y 0) (> x 0)) 
+                (setq diagval (aref matrix (- x 1) (- y 1)))
+                (setq diagval nil))
+            (setq options (remove nil (list leftval topval diagval)))
+            (if (not (eq options nil))
+                (setq cost (list-min options))
+                (setq cost 0))
+            (setf (aref matrix x y) (+ (abs (- a b)) cost))))
+
+    (setq x (- (length a-list) 1)) 
+    (setq y (- (length b-list) 1))
+    (setq path-posn (list (list x y)))
+    (setq path-cost (aref matrix x y))
+    (while (or (> x 0) (> y 0))
+         (if (> x 0) 
+                (setq leftval (aref matrix (- x 1) y))
+                (setq leftval nil))
+            (if (> y 0) 
+                (setq topval (aref matrix x (- y 1)))
+                (setq topval nil)) 
+            (if (and (> y 0) (> x 0)) 
+                (setq diagval (aref matrix (- x 1) (- y 1)))
+                (setq diagval nil))
+            (setq options (list leftval topval diagval))
+            (setq minval (list-min options))
+            (cond
+                (
+                    (eq minval leftval)
+                    (setq x (- x 1)))
+                (
+                    (eq minval topval)
+                    (setq y (- y 1)))
+                (
+                    (eq minval diagval)
+                    (progn 
+                        (setq x (- x 1))
+                        (setq y (- y 1)))))
+            (setq path-cost (+ path-cost minval))
+            (setq path-posn (append path-posn (list (list x y)))))
+    (list path-cost (reverse path-posn))
+    ; path-cost
+)
+
+; (defmethod! DTW ((list-a list) (list-b list))
+;     :initvals '((0 1 2 3 4 5) ((1 1 2 3 5) (0 0 1 2 3 3 4 5) (1 3 4 5)))
+;     :indoc '("list" "list of lists")
+;     :icon 000
+;     :doc "Sorts the lists in second input using Dynamic Time Warping"
+;     (cond
+;         (
+;             (eq (depth list-b) 1)
+;             (dtw-path-cost list-a list-b)
+;         )
+;         (
+;             (eq (depth list-b) 2)
+;             (setq dtw-list 
+;                 (loop for b in list-b collect
+;                     (list (dtw-path-cost list-a b) b)))
+;             (stable-sort dtw-list #'< :key #'first)
+;             (second (mat-trans dtw-list)))))
+
+(defmethod! DTW ((list-a list) (list-b list))
+    :initvals '((0 1 2 3 4 5) ((1 1 2 3 5) (0 0 1 2 3 3 4 5) (1 3 4 5)))
+    :indoc '("list" "list of lists")
+    :icon 000
+    :numouts 2
+    :doc "Sorts the lists in second input using Dynamic Time Warping"
+    (cond
+        (
+            (eq (depth list-b) 1)
+            (progn
+                (setq out (dtw-path-cost list-a list-b))
+                (values-list (list (first out) (second out)))
+            )
+        )
+        (
+            (eq (depth list-b) 2)
+            (setq dtw-list nil)
+                (loop for b in list-b do
+                    (setq out (list (append (dtw-path-cost list-a b) (list b))))
+                    (setq dtw-list (append dtw-list out)))
+            (stable-sort dtw-list #'< :key #'first)
+            (setq out (mat-trans dtw-list))
+            (values-list (list (third out) (second out)))
+        )
+    )
+)
+
+(defmethod! DTW-align ((a list) (b list) (posn list))
+    :initvals '((0 1 2 3 4 2) (0 2 3 4 1) ((0 0) (1 0) (2 1) (3 2) (4 3) (5 4)))
+    :indoc '("list" "list" "list")
+    :icon 000
+    :doc "Works in combination with DTW, aligning the values of the main time series to the others. Use the left input of DTW as in1, and the outputs of DTW as in2 and in3, respectively."
+    (if (and (eq (depth b) 1) (eq (depth posn) 2))
+        (loop for p in posn collect
+            (list (nth (first p) a) (nth (second p) b)))
+        (mapcar #'(lambda (input1 input2) (DTW-align a input1 input2)) b posn)))
 #| 
     TODO:
         - DTW
         - KDTree
-        - Chroma count
+        - Fundamental frequency estimator
+        - Inharmonicity
         - sort-data by
 
  |#

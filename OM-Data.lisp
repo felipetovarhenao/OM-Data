@@ -14,6 +14,8 @@
         ("1-Classification" nil nil (
             NNS
             K-means
+            DTW
+            DTW-align
             Optimal-sorting
             ) nil)
         ("2-Metrics" nil nil (
