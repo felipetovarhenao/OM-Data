@@ -680,6 +680,52 @@
             (list (nth (first p) a) (nth (second p) b)))
         (mapcar #'(lambda (input1 input2) (DTW-align a input1 input2)) b posn)))
 
+(defmethod! N-occurances ((x number) (l list))
+    :initvals '(2 (0 1 2 1 4 3 2 2))
+    :indoc '("item" "list")
+    :icon 000
+    :doc "Counts the number of occurances of an element in a list.
+
+    Example:
+    (n-occur 2 '(0 1 2 1 4 3 2 2)) => 3
+    "
+    (setq counter 0)
+    (loop for y in l do
+        (if (numberp y)
+            (if (eq x y) 
+                (setq counter (+ counter 1)))
+            (setq counter (+ counter (N-occurances x y)))))
+    counter)
+
+(defmethod! N-occurances ((x list) (l list))
+    (setq counter 0)
+    (loop for y in l do
+        (cond 
+            (
+                (eq (depth y) (depth x))
+                (if 
+                    (equal x y) 
+                    (setq counter (+ counter 1))))
+            (
+                (> (depth y) (depth x))
+                (setq counter (+ counter (N-occurances x y))))))
+    counter)
+
+(defmethod! Unique-seq ((l list))
+    :initvals '(((1 2) (3 3) (4 2) (4 2) (2 2) (2 2)))
+    :indoc '("list")
+    :icon 000
+    :doc "Removes repetitions between consecutive elements.
+
+    Example:
+    (unique-seq '((1 2) (3 3) (4 2) (4 2) (2 2) (2 2))) => ((1 2) (3 3) (4 2) (2 2))
+    "
+    (setq output (list (car l)))
+    (loop for x from 1 to (- (length l) 1) do
+        (if (not (equal (nth x l) (nth (- x 1) l)))
+            (setq output (append output (list (nth x l))))))
+    output)
+
 #| 
     TODO:
         - KDTree

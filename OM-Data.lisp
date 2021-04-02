@@ -33,6 +33,8 @@
             List-fold
             Nested-position
             Nested-nth
+            N-occurances
+            Unique-seq
             ) nil)
         ("4-Midicents" nil nil (
             Distortion
