@@ -2,7 +2,8 @@
 
 # OM-Data library
 
-**OM-Data** is a currently developing library of elementary functions, mostly aimed at data processing and analysis in **OpenMusic**. The library includes functions for data metrics, classification, sorting, and processing, as well as some functions for midicent manipulation.
+**OM-Data** is a currently developing library of elementary functions, mostly aimed at data processing and analysis in **OpenMusic**. The library includes functions for data metrics, classification, sorting, and handling, as well as some functions for midicent manipulation.
+These include `K-means`, `DTW`, `NNS`, `List-moments`, `Euclidean-distance`, `Chroma-count`, `IC-vector`, `List-Zscore`, `List-warp`, `List-fold`, among others.
 
 A list of example patches are included, demonstrating possible musical applications of some these functions.
 
