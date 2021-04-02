@@ -15,10 +15,8 @@
         (if (eq (nth i source) n)
             (setq out (flat (list out i)))
         )
-        (setq i (+ i 1))
-    )
-    (remove nil out)
-)
+        (setq i (+ i 1)))
+    (remove nil out))
 
 (defun closest (a b-list)
     (setq distances (loop for b in b-list and n from 0 to (- (length b-list) 1) collect 
@@ -26,8 +24,7 @@
     ))
     (stable-sort distances #'< :key #'first)
     (setq distances (car distances))
-    (list (second distances) (third distances))
-)
+    (list (second distances) (third distances)))
 
 (defun depth (list)
     (if (listp list)
@@ -86,8 +83,8 @@
             (if (not (eq options nil))
                 (setq cost (list-min options))
                 (setq cost 0))
-            (setf (aref matrix x y) (+ (abs (- a b)) cost))))
-
+            (setf (aref matrix x y) (+ (Euclidean-distance a b nil) cost))))
+    
     ; find optimal path
     (setq x (- (length a-list) 1)) 
     (setq y (- (length b-list) 1))
@@ -119,8 +116,7 @@
                         (setq y (- y 1)))))
             (setq path-cost (+ path-cost minval))
             (setq path-posn (append path-posn (list (list x y)))))
-    (list path-cost (reverse path-posn))
-)
+    (list path-cost (reverse path-posn)))
 
 ; -------------- M E T H O D S ---------------------
 
@@ -150,18 +146,22 @@
 
     NOTE: All lists must have the same length."
     (if (equal weights nil)
-        (setq weights (repeat-n 1.0 (length a-list)))
-    )
+        (setq weights (repeat-n 1.0 (length a-list))))
     (setq weights (mapcar #'(lambda (input-list) (/ input-list (list-max weights))) weights))
     (setq l-depth (depth b-list))
     (cond 
         ((eq l-depth 1) (sqrt (reduce #'+ 
             (loop for a in a-list and b in b-list and w in weights collect 
-                (* w(expt (- b a) 2))
-            ))))
+                (* w(expt (- b a) 2))))))
         ((> l-depth 1) 
             (loop for b in b-list collect
                 (Euclidean-distance a-list b weights)))))
+
+(defmethod! Euclidean-distance ((a number) (b number) (weights list))
+    (abs (- b a)))
+
+(defmethod! Euclidean-distance ((a number) (b-list list) (weights list))
+    (loop for b in b-list collect (abs (- b a))))
 
 ; --------------- NNS ---------------
 (defmethod! NNS ((main-list list) (other-lists list) (weights list))
@@ -175,9 +175,12 @@
     (setq positions nil)
     (setq distances 
         (loop for l in other-lists collect 
-            (list l (Euclidean-distance main-list l weights))
-        )
-    )
+            (list l (Euclidean-distance main-list l weights))))
+    (stable-sort distances #'< :key #'second)
+    (car (mat-trans distances)))
+
+(defmethod! NNS ((a number) (list-b list) (weights list))
+    (setq distances (loop for b in list-b collect (list b (Euclidean-distance a b nil))))
     (stable-sort distances #'< :key #'second)
     (car (mat-trans distances)))
 
@@ -289,10 +292,8 @@
     (loop for x in l do
         (cond (
             (equal (member x thin-l :test 'equal) nil) 
-            (setq thin-l (append thin-l (list x))))
-        )
-        (setq out (append out (list (position x thin-l :test 'equal))))
-    ) 
+            (setq thin-l (append thin-l (list x)))))
+        (setq out (append out (list (position x thin-l :test 'equal))))) 
     out)
 
 (defmethod! List-moments ((data list) (moments list))
@@ -314,15 +315,13 @@
                 (setq skewness
                     (/ (reduce #'+
                         (loop for x in data collect
-                            (expt (- x mean) 3)
-                        )) 
+                            (expt (- x mean) 3))) 
                         (* (expt st-dev 3) (length data) 1)))
                 (setq kurtosis
                     (/ (reduce #'+
                         (loop for x in data collect
                             (expt (- x mean) 4))) 
                         (* (expt st-dev 4) (length data))))
-
                 (posn-match (list mean st-dev skewness kurtosis) moments))
             (posn-match (list (car data) 0 nil nil) moments))
             (loop for d in data collect (List-moments d moments))))
@@ -395,9 +394,7 @@
             (setq current-k nil)
             (loop for ld in labeled-data do
                 (if (eq ck (second ld))
-                    (setq current-k (append current-k (list (first ld))))
-                )
-            )
+                    (setq current-k (append current-k (list (first ld))))))
             (setq current-k (mat-trans current-k))
             (if (not (equal current-k nil))
                 (progn 
@@ -502,8 +499,7 @@
             (progn
                 (setq diff (mod (abs (- upper-bound val)) range))
                 (setq out (+ lower-bound diff)))))
-    out
-)
+    out)
 
 (defmethod! List-wrap ((val list) (lower-bound number) (upper-bound number))
     (mapcar #'(lambda (input) (List-wrap input lower-bound upper-bound)) val))
@@ -580,27 +576,23 @@
     :indoc '("list" "list of lists")
     :icon 000
     :numouts 2
+    :outdoc '("sorted lists" "sorted")
     :doc "Sorts the lists in second input using Dynamic Time Warping"
     (cond
         (
-            (eq (depth list-b) 1)
+            (eq (depth list-a) (depth list-b))
             (progn
                 (setq out (dtw-path-cost list-a list-b))
-                (values-list (list (first out) (second out)))
-            )
-        )
+                (values-list (list (first out) (second out)))))
         (
-            (eq (depth list-b) 2)
+            (< (depth list-a) (depth list-b))
             (setq dtw-list nil)
-                (loop for b in list-b do
-                    (setq out (list (append (dtw-path-cost list-a b) (list b))))
-                    (setq dtw-list (append dtw-list out)))
+            (loop for b in list-b do
+                (setq out (list (append (dtw-path-cost list-a b) (list b))))
+                (setq dtw-list (append dtw-list out)))
             (stable-sort dtw-list #'< :key #'first)
             (setq out (mat-trans dtw-list))
-            (values-list (list (third out) (second out)))
-        )
-    )
-)
+            (values-list (list (third out) (second out))))))
 
 ;--------------- DTW-align ---------------
 (defmethod! DTW-align ((a list) (b list) (posn list))
