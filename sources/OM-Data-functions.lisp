@@ -612,13 +612,11 @@
         (loop for p in posn collect
             (list (nth (first p) a) (nth (second p) b)))
         (mapcar #'(lambda (input1 input2) (DTW-align a input1 input2)) b posn)))
-    
+
 #| 
     TODO:
-        - DTW
         - KDTree
         - Fundamental frequency estimator
         - Inharmonicity
         - sort-data by
-
  |#
