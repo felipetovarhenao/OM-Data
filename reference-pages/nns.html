@@ -70,7 +70,7 @@ P,UL,LI, TD {
 - <font color=333366><b>list-b</b></font>
 </td>
 <td>list of lists</td>
-<td>[default = ((0 1 2 3) (1 2 3 4) (2 3 4 5))]</td>
+<td>[default = ((1 2 3 4) (0 0 2 3) (2 3 4 5))]</td>
 </tr>
 <tr>
 <tr>
@@ -89,6 +89,9 @@ P,UL,LI, TD {
 Sorts the lists based on the exhaustive nearest neighbor seach algorithm, using Euclidean distance as the sorting measurement.<br>
     <br>
     NOTE: All lists must have the same length.<br>
+    Example:  <br>
+    (NNS '(0 1 2 3) '((1 2 3 4) (0 0 2 3) (2 3 4 5)) nil) =&gt; ((0 0 2 3) (1 2 3 4) (2 3 4 5))<br>
+    <br>
 </p><br><br></td></tr>
 <td class=center colspan=2>
 <center><font size=-2>Auto doc generation by OpenMusic 6.18 © 2021 IRCAM</font></center>

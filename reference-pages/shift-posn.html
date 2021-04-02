@@ -77,7 +77,11 @@ P,UL,LI, TD {
 </tr>
 <tr><td colspan=2>
 <br><font color=882222><b>Description:</b></font><p>
-shifts a collection of midicents by n steps along itself, assuming octave equivalence between pitches.<br>
+Shifts a collection of midicents by n steps along itself, assuming octave equivalence between pitches.<br>
+    <br>
+    Example:<br>
+    (shift-posn '(3600 5200 6700 7000) '(1 2 3)) =&gt; ((4000 5500 7000 7200) (4300 5800 7200 7600) (4600 6000 7600 7900))<br>
+    <br>
 </p><br><br></td></tr>
 <td class=center colspan=2>
 <center><font size=-2>Auto doc generation by OpenMusic 6.18 © 2021 IRCAM</font></center>

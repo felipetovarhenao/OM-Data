@@ -123,7 +123,11 @@
     :initvals '((100 200 300 400 500) 1.125)
     :indoc '("midicent list" "distortion index")
     :icon 000
-    :doc "Applies spectral distortion to a list of midicents, given a distortion index d. In other words, it expands or compresses the intervals in relation to the lowest midicent value in the input list."
+    :doc "Applies spectral distortion to a list of midicents, given a distortion index d. In other words, it expands or compresses the intervals in relation to the lowest midicent value in the input list.
+    
+    Example:  
+    (distortion '(100 200 300 400 500) 1.125) => (100 212 326 438 550)
+    "
     (if (eq (depth mc-list) 1)
         (progn
             (setq fqlist (mc->f mc-list))
@@ -137,12 +141,16 @@
 
 ; --------------- Euclidean-distance ---------------
 (defmethod! Euclidean-distance ((a-list list) (b-list list) (weights list))
-    :initvals '((0 1 2 3) (1 2 3 4) nil)
+    :initvals '((0 1 2 3) ((1 2 3 4) (3 4 6 8)) nil)
     :indoc '("list" "list of lists" "list (optional)")
     :icon 000
     :doc "Computes the Euclidean distance from one list to a list of lists.
 
-    NOTE: All lists must have the same length."
+    NOTE: All lists must have the same length.
+    
+    Example:  
+    (euclidean-distance '(0 1 2 3) '((1 2 3 4) (3 4 6 8)) nil)) => (2.0 7.6811457)
+    "
     (if (equal weights nil)
         (setq weights (repeat-n 1.0 (length a-list))))
     (setq weights (mapcar #'(lambda (input-list) (/ input-list (list-max weights))) weights))
@@ -163,12 +171,15 @@
 
 ; --------------- NNS ---------------
 (defmethod! NNS ((main-list list) (other-lists list) (weights list))
-    :initvals '((0 1 2 3) ((0 1 2 3) (1 2 3 4) (2 3 4 5)) nil)
+    :initvals '((0 1 2 3) ((1 2 3 4) (0 0 2 3) (2 3 4 5)) nil)
     :indoc '("list" "list of lists" "list (optional)")
     :icon 000
     :doc "Sorts the lists based on the exhaustive nearest neighbor seach algorithm, using Euclidean distance as the sorting measurement.
     
-    NOTE: All lists must have the same length."
+    NOTE: All lists must have the same length.
+    Example:  
+    (NNS '(0 1 2 3) '((1 2 3 4) (0 0 2 3) (2 3 4 5)) nil) => ((0 0 2 3) (1 2 3 4) (2 3 4 5))
+    "
     (setq nns-list nil) 
     (setq positions nil)
     (setq distances 
@@ -184,12 +195,16 @@
 
 ; --------------- Optimal-sorting ---------------
 (defmethod! Optimal-sorting ((st-list list) (other-lists list) (weights list))
-    :initvals '((0 0 0 2) ((0 1 2 3) (1 2 3 4) (2 3 4 5)) nil)
+    :initvals '((0 0 0 2) ((0 1 2 3) (2 3 4 5) (1 2 3 4)) nil)
     :indoc '("list (initial)" "list of lists" "list (optional)")
     :icon 000
     :doc "Sorts a list of lists such that the distance between adjacent lists is optimally minimized, given a starting list.
     
-    NOTE: All lists must have the same length."  
+    NOTE: All lists must have the same length.
+    
+    Example:
+    (optimal-sorting '(0 0 0 2) '((0 1 2 3) (2 3 4 5) (1 2 3 4)) nil) => ((0 0 0 2) (0 1 2 3) (1 2 3 4) (2 3 4 5))
+    "  
     (setq neighbors (NNS st-list other-lists weights))
     (setq remaining (copy-list neighbors))
     (setq output nil)
@@ -200,36 +215,40 @@
 
 ; --------------- List-quantize ---------------
 (defmethod! List-quantize ((a number) (b-list list) (accuracy number))
-    :initvals '(2.5 (0 1 2 3 4 5 6) nil)
+    :initvals '((2.5 4.03) (0 1 2 3 4 5 6) 1.0)
     :indoc '("source (list)" "target (list)" "accuracy (optional)")
     :icon 000
-    :doc "Approximates/quantizes the values from the source list to the closest elements in the target list, given an normalized accuracy percentage (optional) between 0.0 and 1.0" 
+    :doc "Approximates/quantizes the values from the source list to the closest elements in the target list, given an normalized accuracy percentage (optional) between 0.0 and 1.0.
+    
+    Example:
+    (list-quantize '(2.5 4.03) '(0 1 2 3 4 5 6) 0.5) => (2.25 4.0150004)
+    (list-quantize '(2.5 4.03) '(0 1 2 3 4 5 6) 1.0) => (2.0 4.0)
+    " 
     (if (equal accuracy nil)
-        (setq accuracy 1))
+        (setq accuracy 1.0))
     (setq accuracy (clip accuracy 0 1))
     (setq distances nil)
     (loop for b in b-list collect
-        (setq distances(append distances (list (abs (- b a))))))
+        (setq distances (append distances (list (abs (- b a))))))
     (setq sorted-distances (copy-list distances))
     (stable-sort sorted-distances #'<)
-    (+ (* accuracy (nth (nth 0 (get-posn (car sorted-distances) distances)) b-list)) (* a (- 1 accuracy))))
+    (+ (* accuracy (nth (nth 0 (get-posn (car sorted-distances) distances)) b-list)) (* a (- 1 accuracy)))
+    )
 
 (defmethod! List-quantize ((a-list list) (b-list list) (accuracy number))
-    (setq l-depth (depth a-list))
-    (cond 
-        ((eq l-depth 1)
-            (mapcar #'(lambda (input) 
-                (List-quantize input b-list accuracy)) a-list))
-        ((> l-depth 1)
-            (loop for a in a-list collect
-                (List-quantize a b-list accuracy)))))
+    (mapcar #'(lambda (input) 
+        (List-quantize input b-list accuracy)) a-list))
 
 ; --------------- List-mod ---------------
 (defmethod! List-mod ((input-list list) (n number))
     :initvals '((-3 -2 -1 0 1 2 3) 2)
     :indoc '("list" "mod-n")
     :icon 000
-    :doc "Applies sign-preserving modulo arithmetic to input-list"  
+    :doc "Applies sign-preserving modulo arithmetic to input-list.
+    
+    Example:
+    (list-mod '(-3 -2 -1 0 1 2 3) 2) => (-1 0 -1 0 1 0 1)
+    "  
     (setq output nil)
     (loop for i in input-list collect
         (setq output (append output (list
@@ -247,7 +266,11 @@
     :initvals '((3600 5200 6700 7000) 3600 9000)
     :indoc '("midicent list" "range lower bound" "range upperbound")
     :icon 000
-    :doc "Fills the specified range with the midicents from chord-list" 
+    :doc "Fills the specified range with the midicents from chord-list.
+    
+    Example:
+    (fill-range '(3600 5200 6700 7000) 6000 7200) => (6000 6400 6700 7000 7200)
+    " 
     (setq chord-list (remove-dup (List-mod chord-list 1200) #'eq 1))
     (setq base-chord (copy-list chord-list))
     (setq o 0)
@@ -265,7 +288,11 @@
     :initvals '((3600 5200 6700 7000) 1)
     :indoc '("midicent list" "chordal step")
     :icon 000
-    :doc "shifts a collection of midicents by n steps along itself, assuming octave equivalence between pitches." 
+    :doc "Shifts a collection of midicents by n steps along itself, assuming octave equivalence between pitches.
+    
+    Example:
+    (shift-posn '(3600 5200 6700 7000) '(1 2 3)) => ((4000 5500 7000 7200) (4300 5800 7200 7600) (4600 6000 7600 7900))
+    " 
     (setq filled-range (Fill-range chord-list 0 20000))
     (loop for note in chord-list collect
         (nth (+ (position note filled-range) n-step) filled-range)))
@@ -279,7 +306,11 @@
     :initvals '(((0 0) (0 1) (1 0) (1 0) (0 0) (1 1)))
     :indoc '("list")
     :icon 000
-    :doc "Returns a list of element positions, based on possible repetitions" 
+    :doc "Returns a list of element positions, based on possible repetitions.
+    
+    Example:
+    (posn-map '((0 0) (0 1) (1 0) (1 0) (0 0) (1 1))) => (0 1 2 2 0 3)
+    " 
     (setq thin-l nil)
     (setq out nil)
     (loop for x in l do
@@ -291,12 +322,17 @@
 
 ;--------------- List-moments ---------------
 (defmethod! List-moments ((data list) (moments list))
-    :initvals '((0 1 2 3) (0 1 2 3))
+    :initvals '((5 2 3 4 5 6) (0 1 2 3))
     :indoc '("list" "list")
     :icon 000
     :numouts 1
     :outdoc '("mean st-dev skewness kurtosis")
-    :doc "Computes the statistical moments of a list of values: population mean, population standard deviation, skewness and kurtosis" 
+    :doc "Computes the statistical moments of a list of values: population mean, population standard deviation, skewness and kurtosis. 
+    The right inlet specifies which moments to put out, by index. For instance, (0 2) outputs the mean and skewness only. The list (0 1 2 3) outputs all four moments.
+    
+    Example:
+    (list-moments '(5 2 3 4 5 6) '(0 1 2 3)) => (4.1666665 1.3437096 -0.30531597 1.8482844)
+    " 
     (if (eq (depth data) 1)
         (if (> (length data) 1)
             (progn 
@@ -325,7 +361,11 @@
     :initvals '((0 3 6) (0 1 2 3 4 5 6))
     :indoc '("list" "list")
     :icon 000
-    :doc "Computes the standard score (a.k.a. z-score) value of a list"  
+    :doc "Computes the standard score (a.k.a. z-score) value of a list based on another.
+
+    Example: 
+    (list-zscore '(0 3 6) '(0 1 2 3 4 5 6)) => (1.5 0.0 -1.5)
+    "  
     (setq m-list (List-moments l '(0 1)))
     (setq mu (first m-list))
     (setq sigma (second m-list))
@@ -339,7 +379,11 @@
     :initvals '(((1 1 1) (2 2 2) (3 3 3) (4 4 4)) (1 2 3 4) 1)
     :indoc '("list" "list" "integer")
     :icon 000
-    :doc "Weighted nth random"
+    :doc "Chooses a random element with weighted probabilities, N number of times.
+    
+    Example:
+    (nth-wrand '((1 1 1) (2 2 2) (3 3 3) (4 4 4)) '(1 2 3 4) 3) => ((4 4 4) (4 4 4) (4 4 4))
+    "
     (setq datasize (length data))
     (setq weights (om/ weights (list-max weights)))
     (setq weights (om-round (om-scale weights (* datasize 5.0) (list-min weights) (list-max weights))))
@@ -354,7 +398,11 @@
     :icon 000
     :doc "Unsupervised data clustering algorithm.
     
-    NOTE: All data items must have the same size. Weights are optional" 
+    NOTE: All data items must have the same size. Weights are optional.
+    
+    Example:
+    (k-means '((0 1 0) (-3 -1 2) (4 0 9) (-3 -5 -1) (0 4 -3) (2 1 -4)) 2 nil) => (((0 1 0) (-3 -1 2) (-3 -5 -1) (0 4 -3) (2 1 -4)) ((4 0 9)))
+    " 
     
     ; clip k to suitable range
     (setq k (clip k 1 (- (length data) 1))) 
@@ -415,7 +463,8 @@
     :icon 000
     :doc "Cross-interpolation between elements of list A and elements of list B, defined by a given interpolation trajectory/path list. The trajectory list must have at least two values, all between 0.0 and 1.0, which represent the normalized percentage of linear interpolation from list A to list B.
 
-    List A and B do not need to have the same length, but list-b must be of depth 1. List A can be a nested list"
+    List A and B do not need to have the same length, but list-b must be of depth 1. List A can be a nested list.
+    "
     (stable-sort b-list #'<)
     (setq numpts (length a-list))
     (setq traj (om/ traj (list-max (om-abs traj))))
@@ -437,7 +486,11 @@
     :initvals '((("a") "b" (("c") "d") ((("e")))) ("a" "b" "c" "d" "e"))
     :indoc '("list" "integer")
     :icon 000
-    :doc "Finds the position in list B for every element in list A. List B must be of depth 1"
+    :doc "Finds the position in list B for every element in list A. List B must be of depth 1.
+    
+    Example: 
+    (nested-position '((\"a\") \"b\" ((\"c\") \"d\") (((\"e\")))) '(\"a\" \"b\" \"c\" \"d\" \"e\")) => ((0) 1 ((2) 3) (((4))))
+    "
     (if (eq (depth a) (depth b-list))
         (loop for x in a collect
             (position x b-list :test 'equal))
@@ -458,7 +511,11 @@
     :initvals '(((0) 1 ((2) 3) (((4)))) ("a" "b" "c" "d" "e"))
     :indoc '("list" "integer")
     :icon 000
-    :doc "Finds the nth element in list B for every position in list A. List B must be of depth 1"
+    :doc "Finds the nth element in list B for every position in list A. List B must be of depth 1.
+    
+    Example:
+    (nested-nth '((0) 1 ((2) 3) (((4)))) '(\"a\" \"b\" \"c\" \"d\" \"e\")) => ((\"a\") \"b\" ((\"c\") \"d\") (((\"e\"))))
+    "
     (if (eq (depth a) 1)
         (loop for x in a collect
             (nth x b-list))
@@ -476,10 +533,14 @@
 
 ;--------------- List-wrap---------------
 (defmethod! List-wrap ((val number) (lower-bound number) (upper-bound number))
-    :initvals '(8 2 6)
+    :initvals '((-2 -1 0 1 2 3 4 5 6) 0 3)
     :indoc '("list" "number" "number")
     :icon 000
-    :doc "Wraps the values of a list around a given range"
+    :doc "Wraps the values of a list around a given range.
+    
+    Example:
+    (list-wrap '(-2 -1 0 1 2 3 4 5 6) 0 3) => (1 2 0 1 2 0 1 2 0)
+    "
     (setq range (abs (- upper-bound lower-bound)))
     (setq out val)
     (cond
@@ -503,7 +564,11 @@
     :initvals '(8 2 6)
     :indoc '("list" "number" "number")
     :icon 000
-    :doc "Wraps the values of a list around a given range"
+    :doc "Folds the values of a list around a given range.
+    
+    Example:
+    (list-fold '(-2 -1 0 1 2 3 4 5 6) 0 3) => (2 1 0 1 2 3 2 1 0)
+    "
     (setq range (abs (- upper-bound lower-bound)))
     (setq out val)
     (cond
@@ -533,7 +598,11 @@
     :initvals '((6000 6400 6700 7000 7200))
     :indoc '("list")
     :icon 000
-    :doc "Recursively computes the chroma count of a list of midicents"
+    :doc "Recursively computes the chroma count of a list of midicents.
+    
+    Example: 
+    (chroma-count '(6000 6400 6700 7000 7200)) => (2 0 0 0 1 0 0 1 0 0 1 0)
+    "
     (setq chroma-vector (repeat-n 0 12))
     (if (eq (depth mc) 1)
         (progn 
@@ -549,7 +618,11 @@
     :initvals '((6000 6400 6700 7000 7200))
     :indoc '("list")
     :icon 000
-    :doc "Recursively computes the interval vector of a list of midicents"
+    :doc "Recursively computes the interval vector of a list of midicents.
+    
+    Example:
+    (ic-vector '(6000 6400 6700 7000 7200)) => (0 2 2 2 2 1)
+    "
     (if (and (eq (depth mc) 1) (> (length mc) 1))
         (progn 
             (setq icv (repeat-n 0 7))
@@ -571,7 +644,11 @@
     :icon 000
     :numouts 2
     :outdoc '("sorted lists" "sorted")
-    :doc "Sorts the lists in second input using Dynamic Time Warping"
+    :doc "Sorts the lists in second input using Dynamic Time Warping.
+    
+    Example:
+    (dtw '(0 1 2 3 4 5) '(1 1 2 3 5)) => [ 9 ((0 0) (1 0) (1 1) (2 2) (3 3) (4 4) (5 4)) ]
+    "
     (cond
         (
             (eq (depth list-a) (depth list-b))
@@ -593,7 +670,11 @@
     :initvals '((0 1 2 3 4 2) (0 2 3 4 1) ((0 0) (1 0) (2 1) (3 2) (4 3) (5 4)))
     :indoc '("list" "list" "list")
     :icon 000
-    :doc "Works in combination with DTW, aligning the values of the main time series to the others. Use the left input of DTW as in1, and the outputs of DTW as in2 and in3, respectively."
+    :doc "Works in combination with DTW, aligning the values of the main time series to the others. Use the left input of DTW as in1, and the outputs of DTW as in2 and in3, respectively.
+    
+    Example: 
+    (dtw-align '(0 1 2 3 4 2) '(0 2 3 4 1) '((0 0) (1 0) (2 1) (3 2) (4 3) (5 4))) => ((0 0) (1 0) (2 2) (3 3) (4 4) (2 1))
+    "
     (if (and (eq (depth b) 1) (eq (depth posn) 2))
         (loop for p in posn collect
             (list (nth (first p) a) (nth (second p) b)))

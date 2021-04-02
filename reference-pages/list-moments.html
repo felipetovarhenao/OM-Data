@@ -61,7 +61,7 @@ P,UL,LI, TD {
 - <font color=333366><b>data</b></font>
 </td>
 <td>list</td>
-<td>[default = (0 1 2 3)]</td>
+<td>[default = (5 2 3 4 5 6)]</td>
 </tr>
 <tr>
 <tr>
@@ -77,7 +77,12 @@ P,UL,LI, TD {
 </tr>
 <tr><td colspan=2>
 <br><font color=882222><b>Description:</b></font><p>
-Computes the statistical moments of a list of values: population mean, population standard deviation, skewness and kurtosis<br>
+Computes the statistical moments of a list of values: population mean, population standard deviation, skewness and kurtosis. <br>
+    The right inlet specifies which moments to put out, by index. For instance, (0 2) outputs the mean and skewness only. The list (0 1 2 3) outputs all four moments.<br>
+    <br>
+    Example:<br>
+    (list-moments '(5 2 3 4 5 6) '(0 1 2 3)) =&gt; (4.1666665 1.3437096 -0.30531597 1.8482844)<br>
+    <br>
 </p><br><br></td></tr>
 <td class=center colspan=2>
 <center><font size=-2>Auto doc generation by OpenMusic 6.18 © 2021 IRCAM</font></center>

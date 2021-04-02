@@ -70,7 +70,7 @@ P,UL,LI, TD {
 - <font color=333366><b>b-list</b></font>
 </td>
 <td>list of lists</td>
-<td>[default = (1 2 3 4)]</td>
+<td>[default = ((1 2 3 4) (3 4 6 8))]</td>
 </tr>
 <tr>
 <tr>
@@ -89,6 +89,10 @@ P,UL,LI, TD {
 Computes the Euclidean distance from one list to a list of lists.<br>
 <br>
     NOTE: All lists must have the same length.<br>
+    <br>
+    Example:  <br>
+    (euclidean-distance '(0 1 2 3) '((1 2 3 4) (3 4 6 8)) nil)) =&gt; (2.0 7.6811457)<br>
+    <br>
 </p><br><br></td></tr>
 <td class=center colspan=2>
 <center><font size=-2>Auto doc generation by OpenMusic 6.18 © 2021 IRCAM</font></center>

@@ -70,7 +70,7 @@ P,UL,LI, TD {
 - <font color=333366><b>other-lists</b></font>
 </td>
 <td>list of lists</td>
-<td>[default = ((0 1 2 3) (1 2 3 4) (2 3 4 5))]</td>
+<td>[default = ((0 1 2 3) (2 3 4 5) (1 2 3 4))]</td>
 </tr>
 <tr>
 <tr>
@@ -89,6 +89,10 @@ P,UL,LI, TD {
 Sorts a list of lists such that the distance between adjacent lists is optimally minimized, given a starting list.<br>
     <br>
     NOTE: All lists must have the same length.<br>
+    <br>
+    Example:<br>
+    (optimal-sorting '(0 0 0 2) '((0 1 2 3) (2 3 4 5) (1 2 3 4)) nil) =&gt; ((0 0 0 2) (0 1 2 3) (1 2 3 4) (2 3 4 5))<br>
+    <br>
 </p><br><br></td></tr>
 <td class=center colspan=2>
 <center><font size=-2>Auto doc generation by OpenMusic 6.18 © 2021 IRCAM</font></center>
