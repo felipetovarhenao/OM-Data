@@ -8,4 +8,4 @@ A list of example patches are included, demonstrating possible musical applicati
 
 Since **OM-Data** is still in its early stages, only beta releases will be made at the moment.
 
-For info on how to install external libraries in OM visit: https://support.ircam.fr/docs/om-libraries/main/co/OM-Libraries.html
+For info on how to install external libraries in **OM** visit: https://support.ircam.fr/docs/om-libraries/main/co/OM-Libraries.html
