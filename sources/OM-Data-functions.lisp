@@ -13,15 +13,13 @@
     (setq out nil)
     (while (< i (length source))
         (if (eq (nth i source) n)
-            (setq out (flat (list out i)))
-        )
+            (setq out (flat (list out i))))
         (setq i (+ i 1)))
     (remove nil out))
 
 (defun closest (a b-list)
     (setq distances (loop for b in b-list and n from 0 to (- (length b-list) 1) collect 
-        (list (abs (- b a)) b n)
-    ))
+        (list (abs (- b a)) b n)))
     (stable-sort distances #'< :key #'first)
     (setq distances (car distances))
     (list (second distances) (third distances)))
@@ -197,8 +195,7 @@
     (setq output nil)
     (loop for n in neighbors do
         (setq output (append output (list (car remaining))))
-        (setq remaining (NNS (car remaining) (cdr remaining) weights))
-    )
+        (setq remaining (NNS (car remaining) (cdr remaining) weights)))
     (append (list st-list) output))
 
 ; --------------- List-quantize ---------------
@@ -208,17 +205,14 @@
     :icon 000
     :doc "Approximates/quantizes the values from the source list to the closest elements in the target list, given an normalized accuracy percentage (optional) between 0.0 and 1.0" 
     (if (equal accuracy nil)
-        (setq accuracy 1)
-    )
+        (setq accuracy 1))
     (setq accuracy (clip accuracy 0 1))
     (setq distances nil)
     (loop for b in b-list collect
-        (setq distances(append distances (list (abs (- b a)))))
-    )
+        (setq distances(append distances (list (abs (- b a))))))
     (setq sorted-distances (copy-list distances))
     (stable-sort sorted-distances #'<)
-    (+ (* accuracy (nth (nth 0 (get-posn (car sorted-distances) distances)) b-list)) (* a (- 1 accuracy)))
-)
+    (+ (* accuracy (nth (nth 0 (get-posn (car sorted-distances) distances)) b-list)) (* a (- 1 accuracy))))
 
 (defmethod! List-quantize ((a-list list) (b-list list) (accuracy number))
     (setq l-depth (depth a-list))
@@ -262,8 +256,7 @@
     (setq output nil)
     (while (<= o numoctaves)
         (setq output (append output (om+ base-chord (+ (* o 1200) offset))))
-        (setq o (+ o 1))
-    )
+        (setq o (+ o 1)))
     (stable-sort output #'< )
     (band-filter output (list (list lower-bound upper-bound)) 'pass))
 
@@ -296,6 +289,7 @@
         (setq out (append out (list (position x thin-l :test 'equal))))) 
     out)
 
+;--------------- List-moments ---------------
 (defmethod! List-moments ((data list) (moments list))
     :initvals '((0 1 2 3) (0 1 2 3))
     :indoc '("list" "list")
@@ -611,4 +605,6 @@
         - Fundamental frequency estimator
         - Inharmonicity
         - sort-data by
+        - Optimal path with DTW
+        - best voice leading between two single chords
  |#
