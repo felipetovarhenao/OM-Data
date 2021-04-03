@@ -749,34 +749,54 @@
 (defmethod! Mc-clip ((mc-list list) (lower-bound number) (upper-bound number))
     (mapcar #'(lambda (input) (Mc-clip input lower-bound upper-bound)) mc-list))
 
-;--------------- Mc-clip ---------------
+;--------------- Mc-wrap ---------------
+; (defmethod! Mc-wrap ((mc number) (lower-bound number) (upper-bound number))
+;     :initvals '(5500 6000 7200)
+;     :indoc '("list" "number" "number")
+;     :icon 000
+;     :doc ""
+;     (setq range (abs (- upper-bound lower-bound)))
+;     (setq numoct (* 1200 (max 1 (nth-value 0 (ceiling range 1200)))))
+;     (setq lowdif (mod (abs (- mc lower-bound)) numoct))
+;     (setq hidif (mod (abs (- mc upper-bound)) numoct))
+;     (setq out mc)
+;     (
+;         cond
+;         (
+;             (< mc lower-bound)
+;             (progn 
+;                 (setq out (- upper-bound hidif))
+;                 (if    
+;                     (> hidif range)
+;                     (setq out (+ out 1200)))))
+;         (
+;             (>= mc upper-bound)
+;             (progn 
+;                 (setq out (+ lower-bound lowdif))
+;                 (if    
+;                     (> lowdif range)
+;                     (setq out (- out 1200))))))
+;     out)
+
+;--------------- Mc-wrap ---------------
 (defmethod! Mc-wrap ((mc number) (lower-bound number) (upper-bound number))
     :initvals '(5500 6000 7200)
-    :indoc '("list" "number" "number")
+    :indoc '("number" "number" "number")
     :icon 000
     :doc ""
     (setq range (abs (- upper-bound lower-bound)))
-    (setq numoct (* 1200 (max 1 (nth-value 0 (ceiling range 1200)))))
-    (setq lowdif (mod (abs (- mc lower-bound)) numoct))
-    (setq hidif (mod (abs (- mc upper-bound)) numoct))
-    (setq out mc)
-    (
-        cond
-        (
+    (setq oct-offset (* 1200 (nth-value 0 (floor lower-bound 1200))))
+    (setq oct-range (* 1200 (nth-value 0 (ceiling range 1200))))
+    (setq oct-range-floor (* 1200 (nth-value 0 (floor range 1200))))
+    (setq mc (+ oct-offset (abs (nth-value 1 (om// (- mc oct-offset) oct-range)))))
+    (cond 
+        (  
             (< mc lower-bound)
-            (progn 
-                (setq out (- upper-bound hidif))
-                (if    
-                    (> hidif range)
-                    (setq out (+ out 1200)))))
+            (setq mc (+ mc oct-range-floor)))
         (
-            (>= mc upper-bound)
-            (progn 
-                (setq out (+ lower-bound lowdif))
-                (if    
-                    (> lowdif range)
-                    (setq out (- out 1200))))))
-    out)
+            (> mc upper-bound)
+            (setq mc (- mc oct-range-floor))))
+    mc)
 
 (defmethod! Mc-wrap ((mc-list list) (lower-bound number) (upper-bound number))
     (mapcar #'(lambda (input) (Mc-wrap input lower-bound upper-bound)) mc-list))
@@ -799,14 +819,12 @@
         (if (eq (depth ic) 1)
             (progn 
                 (setq mc-start (+ mc-start (nth (mod x (length ic)) ic)))
-                (setq out (append out (list mc-start)))
-            )))
+                (setq out (append out (list mc-start))))))
     (mc-wrap out lower-bound upper-bound))
 
 #| 
     TODO:
         - KDTree
-        - mc-fold
         - Optimal path with DTW
         - best voice leading between two single chords
  |#
