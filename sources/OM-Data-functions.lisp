@@ -680,6 +680,7 @@
             (list (nth (first p) a) (nth (second p) b)))
         (mapcar #'(lambda (input1 input2) (DTW-align a input1 input2)) b posn)))
 
+;--------------- N-occurances ---------------
 (defmethod! N-occurances ((x number) (l list))
     :initvals '(2 (0 1 2 1 4 3 2 2))
     :indoc '("item" "list")
@@ -711,6 +712,7 @@
                 (setq counter (+ counter (N-occurances x y))))))
     counter)
 
+;--------------- Unique-seq ---------------
 (defmethod! Unique-seq ((l list))
     :initvals '(((1 2) (3 3) (4 2) (4 2) (2 2) (2 2)))
     :indoc '("list")
@@ -726,12 +728,35 @@
             (setq output (append output (list (nth x l))))))
     output)
 
+;--------------- Mc-clip ---------------
+(defmethod! Mc-clip ((mc number) (lower-bound number) (upper-bound number))
+    :initvals '(5500 6000 7200)
+    :indoc '("list" "number" "number")
+    :icon 000
+    :doc ""
+    (setq lowdif (- 1200 (mod (abs (- lower-bound mc)) 1200)))
+    (setq hidif (- 1200 (mod (abs (- upper-bound mc)) 1200)))
+    (setq out mc)
+    (cond
+        (
+            (< mc lower-bound)
+            (setq out (+ lower-bound lowdif)))
+        (
+            (>= mc upper-bound)
+            (setq out (- upper-bound hidif))))
+    out)
+
+(defmethod! Mc-clip ((mc-list list) (lower-bound number) (upper-bound number))
+    (mapcar #'(lambda (input) (Mc-clip input lower-bound upper-bound)) mc-list))
+
+
+
 #| 
     TODO:
         - KDTree
-        - Fundamental frequency estimator
-        - Inharmonicity
-        - sort-data by
+        - mc-wrap
+        - mc-fold
+        - ic-cycle
         - Optimal path with DTW
         - best voice leading between two single chords
  |#
