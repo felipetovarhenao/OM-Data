@@ -755,30 +755,58 @@
     :indoc '("list" "number" "number")
     :icon 000
     :doc ""
-    (setq range (* 1200 (max 1 (nth-value 0 (om// (abs (- upper-bound lower-bound)) 1200)))))
-    (setq lowdif (mod (abs (- mc lower-bound)) range))
-    (setq hidif (mod (abs (- mc upper-bound)) range))
+    (setq range (abs (- upper-bound lower-bound)))
+    (setq numoct (* 1200 (max 1 (nth-value 0 (ceiling range 1200)))))
+    (setq lowdif (mod (abs (- mc lower-bound)) numoct))
+    (setq hidif (mod (abs (- mc upper-bound)) numoct))
     (setq out mc)
     (
         cond
         (
             (< mc lower-bound)
-            (setq out (- upper-bound hidif)))
+            (progn 
+                (setq out (- upper-bound hidif))
+                (if    
+                    (> hidif range)
+                    (setq out (+ out 1200)))))
         (
             (>= mc upper-bound)
-            (setq out (+ lower-bound lowdif))))
+            (progn 
+                (setq out (+ lower-bound lowdif))
+                (if    
+                    (> lowdif range)
+                    (setq out (- out 1200))))))
     out)
 
 (defmethod! Mc-wrap ((mc-list list) (lower-bound number) (upper-bound number))
     (mapcar #'(lambda (input) (Mc-wrap input lower-bound upper-bound)) mc-list))
 
+;--------------- Ic-cycle ---------------
+(defmethod! Ic-cycle ((mc-start number) (ic number) (lower-bound number) (upper-bound number) (n-times number))
+    :initvals '(5500 400 6000 7200 10)
+    :indoc '("number" "number" "number" "number" "number")
+    :icon 000
+    :doc ""
+    (setq out nil)  
+    (loop for x from 0 to (- n-times 1) collect
+        (setq out (append out (list (+ mc-start (* x ic)))))
+    )
+    (mc-wrap out lower-bound upper-bound))
+
+(defmethod! Ic-cycle ((mc-start number) (ic list) (lower-bound number) (upper-bound number) (n-times number))
+    (setq out (list mc-start))  
+    (loop for x from 0 to (- n-times 2) collect
+        (if (eq (depth ic) 1)
+            (progn 
+                (setq mc-start (+ mc-start (nth (mod x (length ic)) ic)))
+                (setq out (append out (list mc-start)))
+            )))
+    (mc-wrap out lower-bound upper-bound))
 
 #| 
     TODO:
         - KDTree
-        - mc-wrap
         - mc-fold
-        - ic-cycle
         - Optimal path with DTW
         - best voice leading between two single chords
  |#

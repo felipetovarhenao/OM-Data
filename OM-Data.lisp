@@ -43,4 +43,5 @@
             Chroma-count
             IC-vector
             Mc-clip
+            Mc-wrap
             ) nil)))
