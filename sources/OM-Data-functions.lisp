@@ -749,6 +749,28 @@
 (defmethod! Mc-clip ((mc-list list) (lower-bound number) (upper-bound number))
     (mapcar #'(lambda (input) (Mc-clip input lower-bound upper-bound)) mc-list))
 
+;--------------- Mc-clip ---------------
+(defmethod! Mc-wrap ((mc number) (lower-bound number) (upper-bound number))
+    :initvals '(5500 6000 7200)
+    :indoc '("list" "number" "number")
+    :icon 000
+    :doc ""
+    (setq range (* 1200 (max 1 (nth-value 0 (om// (abs (- upper-bound lower-bound)) 1200)))))
+    (setq lowdif (mod (abs (- mc lower-bound)) range))
+    (setq hidif (mod (abs (- mc upper-bound)) range))
+    (setq out mc)
+    (
+        cond
+        (
+            (< mc lower-bound)
+            (setq out (- upper-bound hidif)))
+        (
+            (>= mc upper-bound)
+            (setq out (+ lower-bound lowdif))))
+    out)
+
+(defmethod! Mc-wrap ((mc-list list) (lower-bound number) (upper-bound number))
+    (mapcar #'(lambda (input) (Mc-wrap input lower-bound upper-bound)) mc-list))
 
 
 #| 

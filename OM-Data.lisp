@@ -42,4 +42,5 @@
             Shift-posn
             Chroma-count
             IC-vector
+            Mc-clip
             ) nil)))
