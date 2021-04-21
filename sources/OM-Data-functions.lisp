@@ -22,6 +22,7 @@
         (list (abs (- b a)) b n)))
     (stable-sort distances #'< :key #'first)
     (setq distances (car distances))
+    ; list of element and position
     (list (second distances) (third distances)))
 
 (defun depth (list)
@@ -822,9 +823,33 @@
                 (setq out (append out (list mc-start))))))
     (mc-wrap out lower-bound upper-bound))
 
+;--------------- Rhythmicon ---------------
+(defmethod! rythmicon ((base-dur number) (multiples list) (times integer))
+    :initvals '(4000 '(1 2 3 4 5) 4)
+    :indoc '("number" "list" "integer")
+    :icon 000
+    :numouts 2
+    :doc ""
+    (setq onsets nil)
+    (setq pitches nil)
+    (setq f0 (mc->f 3600))
+    (setq output nil)
+    (loop for m in multiples do
+        (setq onsets (append onsets (list (dx->x 0 (repeat-n (/ base-dur m) (nth-value 0 (* times (floor m))))))))
+        (setq pitches (append pitches (list (repeat-n (f->mc (* f0 m)) (* times (floor m))))))
+    )
+    (values-list (list onsets pitches))
+    ; (loop for o in onsets and p in pitches collect 
+    ;     (make-instance 'chord-seq :pitches p :onsets o)
+    ; )
+
+)
+    
 #| 
     TODO:
         - KDTree
         - Optimal path with DTW
-        - best voice leading between two single chords
+        - best voice leading between two single chords.
+        - Unique scramble — consecutive lists don't have elements in same position:
+            use permut-random for each column, rotate to unique start element, and then mat-trans.
  |#
