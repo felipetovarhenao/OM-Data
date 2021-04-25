@@ -836,11 +836,15 @@
     (mc-wrap out lower-bound upper-bound))
 
 ;--------------- Unique-scramble ---------------
-(defmethod! unique-scramble ((a-list list) (times integer))
+(defmethod! Unique-scramble ((a-list list) (times integer))
     :initvals '((0 1 2) 4)
     :indoc '("list" "integer")
     :icon 000
-    :doc ""
+    :doc "Performs a series of random permutations such that no element appears consecutively in the same position.
+
+    Example:
+    (unique-scramble '(0 1 2) 4) => ((0 1 2) (2 0 1) (1 2 0) (0 1 2))
+    "
     (setq out (list a-list))
     (setq current (copy-list a-list))
     (loop for i from 1 to (- times 1) do
@@ -858,7 +862,7 @@
     out)
 
 ;--------------- Euclidean-rhythm ---------------
-(defmethod! euclidean-rhythm ((numbeats integer) (period integer) (rotation integer))
+(defmethod! Euclidean-rhythm ((numbeats integer) (period integer) (rotation integer))
     :initvals '(5 13 0)
     :indoc '("integer" "integer" "integer")
     :icon 000
@@ -884,7 +888,7 @@
     (rotate (cdr (append out (list val))) rotation))
 
 ;--------------- Rhythmicon ---------------
-(defmethod! rhythmicon ((base-dur number) (subdivisions list) (times integer))
+(defmethod! Rhythmicon ((base-dur number) (subdivisions list) (times integer))
     :initvals '(3000 '(1 2 3 4 5 6 7) 4)
     :indoc '("number" "list" "integer")
     :icon 000
