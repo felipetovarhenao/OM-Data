@@ -35,6 +35,7 @@
             Nested-nth
             N-occurances
             Unique-seq
+            Unique-scramble
             ) nil)
         ("4-Midicents" nil nil (
             Distortion
@@ -44,4 +45,10 @@
             IC-vector
             Mc-clip
             Mc-wrap
-            ) nil)))
+            ) nil)
+        ("5-Rhythm" nil nil (
+            Rhythmicon
+            Euclidean-rhythm
+            ) nil)
+    )
+)

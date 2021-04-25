@@ -1,5 +1,5 @@
 <html>
-<head><title>MC-WRAP - OM-Data Reference Documentation</title>
+<head><title>EUCLIDEAN-RHYTHM - OM-Data Reference Documentation</title>
 <STYLE TYPE="text/css"><!--  
 
 BODY {background-color: #EEEEEE;
@@ -46,7 +46,7 @@ P,UL,LI, TD {
 <br>
 <table align=center bgcolor=FFFFFF width=87%><tr>
 <td>
-<h2>MC-WRAP</h2>
+<h2>EUCLIDEAN-RHYTHM</h2>
 <font size=-1>[GENERIC-FUNCTION]</font><br><br>
 </td><td width=130>
 <img src=./omlogo.gif width=100><br>
@@ -58,38 +58,35 @@ P,UL,LI, TD {
 <tr>
 <td width=40>&nbsp;</td>
 <td>
-- <font color=333366><b>mc-list</b></font>
+- <font color=333366><b>numbeats</b></font>
 </td>
-<td>number</td>
-<td>[default = 5500]</td>
+<td>integer</td>
+<td>[default = 5]</td>
 </tr>
 <tr>
 <tr>
 <td width=40>&nbsp;</td>
 <td>
-- <font color=333366><b>lower-bound</b></font>
+- <font color=333366><b>period</b></font>
 </td>
-<td>number</td>
-<td>[default = 6000]</td>
+<td>integer</td>
+<td>[default = 13]</td>
 </tr>
 <tr>
 <tr>
 <td width=40>&nbsp;</td>
 <td>
-- <font color=333366><b>upper-bound</b></font>
+- <font color=333366><b>rotation</b></font>
 </td>
-<td>number</td>
-<td>[default = 7200]</td>
+<td>integer</td>
+<td>[default = 0]</td>
 </tr>
 <tr>
 </table>
 </tr>
 <tr><td colspan=2>
 <br><font color=882222><b>Description:</b></font><p>
-Wraps a list of of midicents around a given range, using octave equivalence.<br>
-    <br>
-    Example: <br>
-    (mc-wrap 5900 6000 7200) =&gt; 7100<br>
+euclidean-rhythm, as the name suggests, computes the Euclidean rhythm for a given period k and number of beats/pulses n, where n &lt; k. The output can be interpreted as a list of intervals or distances between between pulses<br>
     <br>
 </p><br><br></td></tr>
 <td class=center colspan=2>

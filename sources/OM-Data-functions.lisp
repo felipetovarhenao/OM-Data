@@ -734,7 +734,11 @@
     :initvals '(5500 6000 7200)
     :indoc '("list" "number" "number")
     :icon 000
-    :doc ""
+    :doc "Constrains a list of of midicents to a given range, using octave equivalence.
+    
+    Example: 
+    (mc-clip 5500 6000 7200) => 6700
+    "
     (setq lowdif (- 1200 (mod (abs (- lower-bound mc)) 1200)))
     (setq hidif (- 1200 (mod (abs (- upper-bound mc)) 1200)))
     (setq out mc)
@@ -784,7 +788,11 @@
     :initvals '(5500 6000 7200)
     :indoc '("number" "number" "number")
     :icon 000
-    :doc ""
+    :doc "Wraps a list of of midicents around a given range, using octave equivalence.
+    
+    Example: 
+    (mc-wrap 5900 6000 7200) => 7100
+    "
     (setq range (abs (- upper-bound lower-bound)))
     (setq oct-offset (* 1200 (nth-value 0 (floor lower-bound 1200))))
     (setq oct-range (* 1200 (nth-value 0 (ceiling range 1200))))
@@ -804,10 +812,14 @@
 
 ;--------------- Ic-cycle ---------------
 (defmethod! Ic-cycle ((mc-start number) (ic number) (lower-bound number) (upper-bound number) (n-times number))
-    :initvals '(5500 400 6000 7200 10)
+    :initvals '(6300 (500 200) 6000 6700 5)
     :indoc '("number" "number" "number" "number" "number")
     :icon 000
-    :doc ""
+    :doc "Builds an interval cycle given a starting pitch, a interval class, a lower and upper bound (range), and a number of iterations.
+
+    Example:
+    (ic-cycle 6300 '(500 200) 6000 6700 5) => (6300 6800 7000 6300 6500)
+    "
     (setq out nil)  
     (loop for x from 0 to (- n-times 1) collect
         (setq out (append out (list (+ mc-start (* x ic)))))
@@ -823,33 +835,92 @@
                 (setq out (append out (list mc-start))))))
     (mc-wrap out lower-bound upper-bound))
 
+;--------------- Unique-scramble ---------------
+(defmethod! unique-scramble ((a-list list) (times integer))
+    :initvals '((0 1 2) 4)
+    :indoc '("list" "integer")
+    :icon 000
+    :doc ""
+    (setq out (list a-list))
+    (setq current (copy-list a-list))
+    (loop for i from 1 to (- times 1) do
+        (setq unique nil)
+        (while (eq unique nil)
+            (setq dups 0)
+            (setq scrambled (permut-random current))
+            (loop for c in current and s in scrambled do
+                (if (eq c s)
+                    (setq dups (+ dups 1))))
+            (if (eq dups 0)
+                (setq unique t)))
+        (setq out (append out (list scrambled)))
+        (setq current (copy-list scrambled)))
+    out)
+
+;--------------- Euclidean-rhythm ---------------
+(defmethod! euclidean-rhythm ((numbeats integer) (period integer) (rotation integer))
+    :initvals '(5 13 0)
+    :indoc '("integer" "integer" "integer")
+    :icon 000
+    :doc "euclidean-rhythm, as the name suggests, computes the Euclidean rhythm for a given period k and number of beats/pulses n, where n < k. The output can be interpreted as a list of intervals or distances between between pulses
+    "
+    (setq a numbeats)
+    (setq b (- period numbeats))
+    (setq binary-seq (list (repeat-n 1 a) (repeat-n 0 b)))
+    (while (> (min a b) 1)
+        (setq binary-seq (mapcar #'(lambda (input) (remove nil (flat input))) (mat-trans binary-seq)))
+        (setq binary-seq (group-list binary-seq (sort-list (list a b)) 'linear))
+        (setq a (length (car binary-seq)))
+        (setq b (length (second binary-seq))))
+    (setq binary-seq (flat binary-seq))
+    (setq val 1)
+    (setq out nil)
+    (loop for n in binary-seq do
+        (if (eq n 0)
+            (setq val (+ val 1))
+            (progn
+                (setq out (append out (list val)))
+                (setq val 1))))
+    (rotate (cdr (append out (list val))) rotation))
+
 ;--------------- Rhythmicon ---------------
-(defmethod! rythmicon ((base-dur number) (multiples list) (times integer))
-    :initvals '(4000 '(1 2 3 4 5) 4)
+(defmethod! rhythmicon ((base-dur number) (subdivisions list) (times integer))
+    :initvals '(3000 '(1 2 3 4 5 6 7) 4)
     :indoc '("number" "list" "integer")
     :icon 000
-    :numouts 2
-    :doc ""
+    :doc "Outputs a rhythmicon as a MULTI-SEQ, given a fundamental duration (ms), a list of subdivisions, and a number of repetitions. For each rhythmic partial, the corresponding pitch is automatically assigned, using 3300 as the fundamental.
+    "
     (setq onsets nil)
     (setq pitches nil)
-    (setq f0 (mc->f 3600))
+    (setq durations nil)
+    (setq vels (om-scale subdivisions 120 30))
+    (setq f0 (mc->f 3300))
     (setq output nil)
-    (loop for m in multiples do
-        (setq onsets (append onsets (list (dx->x 0 (repeat-n (/ base-dur m) (nth-value 0 (* times (floor m))))))))
+    (setq velocities nil)
+    (setq max-onset (* base-dur times))
+    (loop for m in subdivisions and v in vels do
+        (setq numnotes (nth-value 0 (ceiling (* times m))))
+        (setq durs (repeat-n (/ base-dur m) numnotes))
+        (setq pre-onsets (om-clip (dx->x 0 durs) 0 max-onset))
+        (setq onsets (append onsets (list pre-onsets)))
+        (setq durations (append durations (list (x->dx pre-onsets))))
         (setq pitches (append pitches (list (repeat-n (f->mc (* f0 m)) (* times (floor m))))))
-    )
-    (values-list (list onsets pitches))
-    ; (loop for o in onsets and p in pitches collect 
-    ;     (make-instance 'chord-seq :pitches p :onsets o)
-    ; )
+        (setq velocities (append velocities (list (repeat-n v numnotes)))))
+    (make-instance 'multi-seq :chord-seqs (reverse (loop for o in onsets and p in pitches and d in durations and v in velocities collect 
+        (make-instance 'chord-seq :lmidic p :lonset o :ldur d :lvel v)))))
 
-)
-    
+; (defun transp-note (self tr)
+;     (make-instance (type-of self) :midic (+ (midic self) tr))
+; )
+
+; (defun transp-chord (self)
+;     (mki (type-of self) :lmidic (om+ 1200 (lmidic self)))
+; )
+
+
 #| 
     TODO:
         - KDTree
         - Optimal path with DTW
         - best voice leading between two single chords.
-        - Unique scramble — consecutive lists don't have elements in same position:
-            use permut-random for each column, rotate to unique start element, and then mat-trans.
  |#
