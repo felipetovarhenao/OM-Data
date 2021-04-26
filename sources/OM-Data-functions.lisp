@@ -915,8 +915,8 @@
 
 ;--------------- Extract-channel ---------------
 (defmethod! Extract-channel ((self chord-seq) (midi-chan integer))
-    :initvals '((mki 'chord-seq :lmidic '((6000 7200) (6400 7000) 6700) :lchan '((1 1) (2 1) 3)) 1)
-    :indoc '("<chord-seq> or <multi-seq>" "integer")
+    :initvals '((make-instance 'chord-seq :lmidic '((6000 7200) (6400 7000) 6700) :lchan '((1 1) (2 1) 3)) 1)
+    :indoc '("chord-seq or multi-seq" "integer")
     :icon 000
     :doc "
         Extracts the notes with the specified midi-channel from a CHORD-SEQ or MULTI-SEQ 
@@ -950,14 +950,14 @@
 
 ;--------------- Segment-seq ---------------
 (defmethod! Segment-seq ((self chord-seq) (time-pt-list list) (samp-dur number) &optional (detection-mode '0) (clip-mode '0))
-    :initvals '((mki 'chord-seq :lmidic '((6000 7200) (6400 7000) 6700) :lchan '((1 1) (2 1) 3)) (0 1000) 250 '0 '0)
-    :indoc '("<chord-seq>" "list or number" "number" "menu" "menu")
+    :initvals '((make-instance 'chord-seq :lmidic '((6000 7200) (6400 7000) 6700) :lchan '((1 1) (2 1) 3)) (0 1000) 250 '0 '0)
+    :indoc '("chord-seq or multi-seq" "list or number" "number" "menu" "menu")
     :icon 000
     :menuins '((3 (("detect onsets" '0) ("detect onsets and durations" '1))) (4 (("no clipping" '0) ("clip onsets" '1) ("clip durations" '2) ("clip onsets and durations" '3))))
     :doc "
         Extracts a segment from a CHORD-SEQ, given a list of time points and duration for all segments.
     "
-    (setq cents nil) (setq onsets nil) (setq durations nil) (setq velocities nil) (setq offsets nil)
+    (setq cents nil) (setq onsets nil) (setq durations nil) (setq velocities nil) (setq offsets nil) (setq chans nil)
     (setq seq-onsets (lonset self))
     (loop for time-pt in time-pt-list do
         (setq end-time-pt (+ time-pt samp-dur))
@@ -972,18 +972,24 @@
             (setq current_dur nil)
             (setq current_vel nil)
             (setq current_offset nil)
+            (setq current_chan nil)
 
             (loop for tp in time-points and j from 0 to (- (length time-points) 1) do
                 (if 
                     (if (eq detection-mode '1)
                         (or
-                            (and
-                                (>= (first tp) time-pt)
-                                (< (first tp) end-time-pt))
-                            (and
-                                (> (second tp) time-pt)
-                                (<= (second tp) end-time-pt)))
-                        (and
+                            (and ; detect onset within range
+                                (>= (first tp) time-pt) ; onset after st
+                                (< (first tp) end-time-pt)) ; onset before end
+                            (and ; detect ending within range
+                                (> (second tp) time-pt) ; outset after st
+                                (<= (second tp) end-time-pt)) ; and outset before end
+                            (and  ; detect note during range
+                                (<= (first tp) time-pt) ; onset before st
+                                (>= (second tp) end-time-pt) ; and onset after end
+                            )
+                        )
+                        (and ; detect onset within range only
                             (>= (first tp) time-pt)
                             (< (first tp) end-time-pt)))
                     (progn 
@@ -991,9 +997,11 @@
                         (setq out-dur (nth j (nth i (ldur self))))
                         (if (or (eq clip-mode 2) (eq clip-mode 3))
                             (setq out-dur (min out-dur maxdur)))
+
                         (setq current_chord (append current_chord (list (nth j (nth i (lmidic self))))))
                         (setq current_dur (append current_dur (list out-dur)))
                         (setq current_vel (append current_vel (list (nth j (nth i (lvel self))))))
+                        (setq current_chan (append current_chan (list (nth j (nth i (lchan self))))))
                         (setq current_offset (append current_offset (list (nth j (nth i (loffset self)))))))))
             (if (not (eq current_chord nil))
                 (progn 
@@ -1004,9 +1012,10 @@
                     (setq onsets (append onsets (list out-onset)))
                     (setq durations (append durations (list current_dur)))
                     (setq velocities (append velocities (list current_vel)))
+                    (setq chans (append chans (list current_chan)))
                     (setq offsets (append offsets (list current_offset)))))))
     (setq min-onset (list-min (flat onsets)))
-    (make-instance 'chord-seq :lmidic cents :lonset (om- onsets min-onset) :ldur durations :lvel velocities :loffset offsets))
+    (make-instance 'chord-seq :lmidic cents :lonset (om- onsets min-onset) :ldur durations :lvel velocities :loffset offsets :lchan chans))
 
 (defmethod! Segment-seq ((self chord-seq) (time-pt number) (samp-dur number) &optional (detection-mode '0) (clip-mode '0))
     (Segment-seq self (list time-pt) samp-dur detection-mode clip-mode))
