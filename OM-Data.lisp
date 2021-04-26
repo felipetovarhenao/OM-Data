@@ -50,5 +50,9 @@
             Rhythmicon
             Euclidean-rhythm
             ) nil)
+        ("6-Score" nil nil (
+            Segment-seq
+            Extract-channel
+            ) nil)
     )
 )

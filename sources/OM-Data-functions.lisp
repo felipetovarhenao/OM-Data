@@ -786,7 +786,7 @@
 ;--------------- Mc-wrap ---------------
 (defmethod! Mc-wrap ((mc number) (lower-bound number) (upper-bound number))
     :initvals '(5500 6000 7200)
-    :indoc '("number" "number" "number")
+    :indoc '("number or list" "number" "number")
     :icon 000
     :doc "Wraps a list of of midicents around a given range, using octave equivalence.
     
@@ -813,7 +813,7 @@
 ;--------------- Ic-cycle ---------------
 (defmethod! Ic-cycle ((mc-start number) (ic number) (lower-bound number) (upper-bound number) (n-times number))
     :initvals '(6300 (500 200) 6000 6700 5)
-    :indoc '("number" "number" "number" "number" "number")
+    :indoc '("number" "number or list" "number" "number" "number")
     :icon 000
     :doc "Builds an interval cycle given a starting pitch, a interval class, a lower and upper bound (range), and a number of iterations.
 
@@ -913,18 +913,116 @@
     (make-instance 'multi-seq :chord-seqs (reverse (loop for o in onsets and p in pitches and d in durations and v in velocities collect 
         (make-instance 'chord-seq :lmidic p :lonset o :ldur d :lvel v)))))
 
-; (defun transp-note (self tr)
-;     (make-instance (type-of self) :midic (+ (midic self) tr))
-; )
+;--------------- Extract-channel ---------------
+(defmethod! Extract-channel ((self chord-seq) (midi-chan integer))
+    :initvals '((mki 'chord-seq :lmidic '((6000 7200) (6400 7000) 6700) :lchan '((1 1) (2 1) 3)) 1)
+    :indoc '("<chord-seq> or <multi-seq>" "integer")
+    :icon 000
+    :doc "
+        Extracts the notes with the specified midi-channel from a CHORD-SEQ or MULTI-SEQ 
+    "
+    (setq channels (lchan self))
+    (setq cents nil) (setq onsets nil) (setq durations nil) (setq velocities nil) (setq offsets nil)
+    (loop for chans in channels and i from 0 to (- (length channels) 1) do
+        (setq current_chord nil)
+        (setq current_dur nil)
+        (setq current_vel nil)
+        (setq current_offset nil)
+        (loop for ch in chans and j from 0 to (- (length chans) 1) do
+            (if (eq ch midi-chan)
+                (progn
+                    (setq current_chord (append current_chord (list (nth j (nth i (lmidic self))))))
+                    (setq current_dur (append current_dur (list (nth j (nth i (ldur self))))))
+                    (setq current_vel (append current_vel (list (nth j (nth i (lvel self))))))
+                    (setq current_offset (append current_offset (list (nth j (nth i (loffset self)))))))))
+        (if (not (eq current_chord nil))
+            (progn 
+                (setq cents (append cents (list current_chord)))
+                (setq onsets (append onsets (list (nth i (lonset self)))))
+                (setq durations (append durations (list current_dur)))
+                (setq velocities (append velocities (list current_vel)))
+                (setq offsets (append offsets (list current_offset))))))
+    (make-instance 'chord-seq :lmidic cents :lonset onsets :ldur durations :lvel velocities :loffset offsets :lchan midi-chan))
 
-; (defun transp-chord (self)
-;     (mki (type-of self) :lmidic (om+ 1200 (lmidic self)))
-; )
+(defmethod! Extract-channel ((self multi-seq) (midi-chan integer))
+    (setq chord-seq-list (inside self))
+    (make-instance 'multi-seq :chord-seqs (mapcar #'(lambda (input) (Extract-channel input midi-chan)) chord-seq-list)))
 
+;--------------- Segment-seq ---------------
+(defmethod! Segment-seq ((self chord-seq) (time-pt-list list) (samp-dur number) &optional (detection-mode '0) (clip-mode '0))
+    :initvals '((mki 'chord-seq :lmidic '((6000 7200) (6400 7000) 6700) :lchan '((1 1) (2 1) 3)) (0 1000) 250 '0 '0)
+    :indoc '("<chord-seq>" "list or number" "number" "menu" "menu")
+    :icon 000
+    :menuins '((3 (("detect onsets" '0) ("detect onsets and durations" '1))) (4 (("no clipping" '0) ("clip onsets" '1) ("clip durations" '2) ("clip onsets and durations" '3))))
+    :doc "
+        Extracts a segment from a CHORD-SEQ, given a list of time points and duration for all segments.
+    "
+    (setq cents nil) (setq onsets nil) (setq durations nil) (setq velocities nil) (setq offsets nil)
+    (setq seq-onsets (lonset self))
+    (loop for time-pt in time-pt-list do
+        (setq end-time-pt (+ time-pt samp-dur))
+
+        (loop for s-onset in seq-onsets and s-dur in (ldur self) and i from 0 to (- (length seq-onsets) 1) do
+
+            (setq end-pts (om+ s-onset s-dur))
+            (setq st-pts (om- end-pts s-dur))
+            (setq time-points (mat-trans (list st-pts end-pts)))
+
+            (setq current_chord nil)
+            (setq current_dur nil)
+            (setq current_vel nil)
+            (setq current_offset nil)
+
+            (loop for tp in time-points and j from 0 to (- (length time-points) 1) do
+                (if 
+                    (if (eq detection-mode '1)
+                        (or
+                            (and
+                                (>= (first tp) time-pt)
+                                (< (first tp) end-time-pt))
+                            (and
+                                (> (second tp) time-pt)
+                                (<= (second tp) end-time-pt)))
+                        (and
+                            (>= (first tp) time-pt)
+                            (< (first tp) end-time-pt)))
+                    (progn 
+                        (setq maxdur (- end-time-pt (first tp)))
+                        (setq out-dur (nth j (nth i (ldur self))))
+                        (if (or (eq clip-mode 2) (eq clip-mode 3))
+                            (setq out-dur (min out-dur maxdur)))
+                        (setq current_chord (append current_chord (list (nth j (nth i (lmidic self))))))
+                        (setq current_dur (append current_dur (list out-dur)))
+                        (setq current_vel (append current_vel (list (nth j (nth i (lvel self))))))
+                        (setq current_offset (append current_offset (list (nth j (nth i (loffset self)))))))))
+            (if (not (eq current_chord nil))
+                (progn 
+                    (setq cents (append cents (list current_chord)))
+                    (setq out-onset (nth i (lonset self)))
+                    (if (or (eq clip-mode '1) (eq clip-mode '3))
+                        (setq out-onset (max out-onset time-pt)))
+                    (setq onsets (append onsets (list out-onset)))
+                    (setq durations (append durations (list current_dur)))
+                    (setq velocities (append velocities (list current_vel)))
+                    (setq offsets (append offsets (list current_offset)))))))
+    (setq min-onset (list-min (flat onsets)))
+    (make-instance 'chord-seq :lmidic cents :lonset (om- onsets min-onset) :ldur durations :lvel velocities :loffset offsets))
+
+(defmethod! Segment-seq ((self chord-seq) (time-pt number) (samp-dur number) &optional (detection-mode '0) (clip-mode '0))
+    (Segment-seq self (list time-pt) samp-dur detection-mode clip-mode))
+
+(defmethod! Segment-seq ((self multi-seq) (time-pt number) (samp-dur number) &optional (detection-mode '0) (clip-mode '0))
+    (make-instance 'multi-seq :chord-seqs 
+        (loop for seq in (inside self) collect
+            (Segment-seq seq (list time-pt) samp-dur detection-mode clip-mode))))
+
+(defmethod! Segment-seq ((self multi-seq) (time-pt list) (samp-dur number) &optional (detection-mode '0) (clip-mode '0))
+    (make-instance 'multi-seq :chord-seqs 
+        (loop for seq in (inside self) collect
+            (Segment-seq seq time-pt samp-dur detection-mode clip-mode))))
 
 #| 
     TODO:
         - KDTree
-        - Optimal path with DTW
-        - best voice leading between two single chords.
+        - Granulate
  |#
