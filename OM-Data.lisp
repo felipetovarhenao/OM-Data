@@ -17,6 +17,8 @@
             DTW
             DTW-align
             Optimal-sorting
+            Markov-build
+            Markov-run
             ) nil)
         ("2-Metrics" nil nil (
             Euclidean-distance
@@ -28,7 +30,7 @@
             List-quantize
             List-mod
             Posn-map
-            Nth-wrand
+            Pick-rand
             List-wrap
             List-fold
             Nested-position
@@ -36,6 +38,7 @@
             N-occurances
             Unique-seq
             Unique-scramble
+            List-frames
             ) nil)
         ("4-Midicents" nil nil (
             Distortion
