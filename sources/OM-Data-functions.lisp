@@ -46,7 +46,7 @@
                 (expt (Euclidean-distance d kc nil) 2)))
             (setq w-prob (append w-prob (list (list-min distances))))
         )
-        (setq new-ck (Nth-wrand data w-prob 1))
+        (setq new-ck (Pick-random data w-prob 1))
         (setq data (remove new-ck data :test 'equal))
         (setq k-centroids (append k-centroids new-ck))
         (setq x (+ x 1)))
@@ -375,22 +375,35 @@
 (defmethod! List-Zscore ((x-list list) (l list))
     (mapcar #'(lambda (input) (List-Zscore input l)) x-list))
 
-; --------------- Nth-wrand ---------------
-(defmethod! Nth-wrand ((data list) (weights list) (times integer))
+; --------------- Pick-random ---------------
+(defmethod! Pick-random ((in-list list) (weights list) (times integer))
     :initvals '(((1 1 1) (2 2 2) (3 3 3) (4 4 4)) (1 2 3 4) 1)
     :indoc '("list" "list" "integer")
     :icon 000
     :doc "Chooses a random element with weighted probabilities, N number of times.
     
     Example:
-    (nth-wrand '((1 1 1) (2 2 2) (3 3 3) (4 4 4)) '(1 2 3 4) 3) => ((4 4 4) (4 4 4) (4 4 4))
+    (pick-random '((1 1 1) (2 2 2) (3 3 3) (4 4 4)) '(1 2 3 4) 3) => ((4 4 4) (4 4 4) (4 4 4))
     "
-    (setq datasize (length data))
-    (setq weights (om/ weights (list-max weights)))
-    (setq weights (om-round (om-scale weights (* datasize 5.0) (list-min weights) (list-max weights))))
-    (setq options (flat (loop for d in data and w in weights collect
-        (repeat-n d w)) 1))
-    (repeat-n (nth-random options) times))
+    (if (equal weights nil)
+        (setq weights (repeat-n 1 (length in-list)))
+    )
+    (setq sum-w (reduce-tree weights #'+))
+    (setq out nil)
+
+    (loop for n from 1 to times do
+        (setq rand (random (* 1.0 sum-w)))
+        (setq stop nil)
+        (setq index 0)
+        (while (and (eq stop nil) (< index (length weights)))
+            (setq w (nth index weights))
+            (if (< rand w)
+                (progn 
+                    (setq out (append out (list (nth index in-list))))
+                    (setq stop t)))
+            (setq rand (- rand w))
+            (setq index (+ index 1))))
+    out)
 
 ;--------------- K-means ---------------
 (defmethod! K-means ((data list) (k integer) (weights list))
@@ -1030,6 +1043,72 @@
         (loop for seq in (inside self) collect
             (Segment-seq seq time-pt samp-dur detection-mode clip-mode))))
 
+;--------------- List-frames ---------------
+(defmethod! List-frames ((in-list list) (size integer) &optional (hop 1))
+    :initvals '((0 1 2 3 4 5 6) 2 1)
+    :indoc '("list" "integer" "integer")
+    :icon 000
+    :doc ""
+    (setq indices (arithm-ser 0 (- size 1) 1))
+    (setq x 0)
+    (setq out nil)
+    (setq max-index (- (+ (length in-list) 1) size))
+    (while (< x max-index)
+        (setq out (append out (list (posn-match in-list (om+ indices x) ))))
+        (setq x (+ x (max 1 hop))) 
+    )
+    out
+)
+
+;--------------- Markov-build ---------------
+(defmethod! Markov-build ((data list) (order integer))
+    :initvals '((0 2 1 3 2 4 3 5 4 6 5 4 3 2 1 0) 1)
+    :indoc '("list" "integer")
+    :icon 000
+    :doc ""
+    
+    (setq data (List-frames data order 1))
+    (setq thin-data (reverse (remove-dup data 'equal 1)))
+    (setq dims (length thin-data))
+    (setq init (mat-trans (append (list thin-data) (repeat-n (repeat-n 0 dims) dims))))
+    (setq matrix (make-array (list (length thin-data) (+ 1 (length thin-data))) :initial-contents init))
+    (loop for thin-item in thin-data and row from 0 to (- (length thin-data) 1) do
+        (loop for item in data and pos from 0 to (- (length data) 2) do
+            (if (equal item thin-item)
+                (progn
+                    (setq next-item (nth (+ pos 1) data))
+                    (setq col (position next-item thin-data :test 'equal))
+                    (setf (aref matrix row (+ col 1)) (+ 1 (aref matrix row (+ 1 col))))))))
+    (setq out nil)
+    ; convert to list and normalize rows
+    (loop for row from 0 to (- dims 1) do
+        (setq current-row nil)
+        (loop for col from 0 to dims do
+            (setq val (aref matrix row col))
+            (setq current-row (append current-row (list val))))
+        (setq out (append out (list current-row))))
+    out
+)
+
+(defmethod! Markov-run ((matrix list) (iterations integer))
+    :initvals '('(((0) 0 0 1 0 0) ((1) 1/2 0 0 1/2 0) ((2) 0 2/3 0 0 1/3) ((3) 0 0 1 0 0) ((4) 0 0 0 1 0)) 5)
+    :indoc '("list" "integer")
+    :icon 000
+    :doc ""
+    (setq states (car (mat-trans matrix)))
+    (setq current-state (nth-random states))
+    (setq output nil)
+
+    (loop for rep from 0 to (- iterations 1) do
+        (setq output (append output (list (car current-state))))
+        (setq row-index (position current-state states :test 'equal))
+        (setq weights (cdr (nth row-index matrix)))
+        (if (> (reduce-tree weights #'+) 0)
+            (progn 
+                (setq choice (car (pick-random states weights 1)))
+                (setq current-state choice))
+            (setq current-state (nth-random states))))
+    output)
 #| 
     TODO:
         - KDTree
