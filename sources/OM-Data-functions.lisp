@@ -967,8 +967,7 @@
     :indoc '("chord-seq or multi-seq" "list or number" "number" "menu" "menu")
     :icon 000
     :menuins '((3 (("detect onsets" '0) ("detect onsets and durations" '1))) (4 (("no clipping" '0) ("clip onsets" '1) ("clip durations" '2) ("clip onsets and durations" '3))))
-    :doc "
-        Extracts a segment from a CHORD-SEQ, given a list of time points and duration for all segments.
+    :doc "Extracts a segment from a CHORD-SEQ, given a list of time points and duration for all segments.
     "
     (setq cents nil) (setq onsets nil) (setq durations nil) (setq velocities nil) (setq offsets nil) (setq chans nil)
     (setq seq-onsets (lonset self))
@@ -1055,18 +1054,18 @@
     (setq max-index (- (+ (length in-list) 1) size))
     (while (< x max-index)
         (setq out (append out (list (posn-match in-list (om+ indices x) ))))
-        (setq x (+ x (max 1 hop))) 
-    )
-    out
-)
+        (setq x (+ x (max 1 hop))))
+    out)
 
 ;--------------- Markov-build ---------------
 (defmethod! Markov-build ((data list) (order integer))
     :initvals '((0 2 1 3 2 4 3 5 4 6 5 4 3 2 1 0) 1)
     :indoc '("list" "integer")
     :icon 000
-    :doc ""
-    
+    :doc "Takes a list and computes a Nth-order transition probability matrix of the elements (states) in the list.
+
+    markov-build is meant to be used along with markov-run.
+    "
     (setq data (List-frames data order 1))
     (setq thin-data (reverse (remove-dup data 'equal 1)))
     (setq dims (length thin-data))
@@ -1087,14 +1086,16 @@
             (setq val (aref matrix row col))
             (setq current-row (append current-row (list val))))
         (setq out (append out (list current-row))))
-    out
-)
+    out)
 
 (defmethod! Markov-run ((matrix list) (iterations integer))
     :initvals '('(((0) 0 0 1 0 0) ((1) 1/2 0 0 1/2 0) ((2) 0 2/3 0 0 1/3) ((3) 0 0 1 0 0) ((4) 0 0 0 1 0)) 5)
     :indoc '("list" "integer")
     :icon 000
-    :doc ""
+    :doc "Takes a transition probability matrix and outputs a sequence of a given length.
+
+    markov-run is meant to be used along with markov-build.
+    "
     (setq states (car (mat-trans matrix)))
     (setq current-state (nth-random states))
     (setq output nil)
