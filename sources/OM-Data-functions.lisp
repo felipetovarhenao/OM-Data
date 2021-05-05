@@ -1122,24 +1122,16 @@
     (setq data (List-frames data order 1))
     (setq thin-data (reverse (remove-dup data 'equal 1)))
     (setq dims (length thin-data))
-    (setq init (mat-trans (append (list thin-data) (repeat-n (repeat-n 0 dims) dims))))
-    (setq matrix (make-array (list (length thin-data) (+ 1 (length thin-data))) :initial-contents init))
+    (setq matrix (mat-trans (append (list thin-data) (repeat-n (repeat-n 0 dims) dims))))
     (loop for thin-item in thin-data and row from 0 to (- (length thin-data) 1) do
         (loop for item in data and pos from 0 to (- (length data) 2) do
             (if (equal item thin-item)
                 (progn
                     (setq next-item (nth (+ pos 1) data))
                     (setq col (position next-item thin-data :test 'equal))
-                    (setf (aref matrix row (+ col 1)) (+ 1 (aref matrix row (+ 1 col))))))))
-    (setq out nil)
-    ; convert to list and normalize rows
-    (loop for row from 0 to (- dims 1) do
-        (setq current-row nil)
-        (loop for col from 0 to dims do
-            (setq val (aref matrix row col))
-            (setq current-row (append current-row (list val))))
-        (setq out (append out (list current-row))))
-    out)
+                    (setf (nth (+ col 1) (nth row matrix)) (+ 1 (nth (+ col 1) (nth row matrix))))))))
+    matrix
+)
 
 (defmethod! Markov-run ((matrix list) (iterations integer) &optional (initial nil))
     :initvals '('(((0) 0 0 1 0 0) ((1) 1/2 0 0 1/2 0) ((2) 0 2/3 0 0 1/3) ((3) 0 0 1 0 0) ((4) 0 0 0 1 0)) 5 nil)
@@ -1172,17 +1164,46 @@
             (setq current-state (nth-random states))))
     output)
 
-;--------------- PCA ---------------
-(defmethod! PCA ((data list))
-    :initvals '(((10 3 2) (-30 1 2) (0 0 1) (45 0 3) (-50 3 2)))
-    :indoc '("list")
-    :icon 000
-    :doc "PCA"
-    (mat-trans (loop for dim-row in (mat-trans data) collect 
-        (om- dim-row (car (list-moments dim-row '(0))))
-    ))
+; (defmethod! Covariance ((data list))
+;     :initvals '(((10 3 2) (-30 1 2) (0 0 1) (45 0 3) (-50 3 2)))
+;     :indoc '("list")
+;     :icon 000
+;     :doc "Covariance"
+;     (setq mat-center (flat (list-moments (mat-trans data) '(0))))
+;     (setq datasize (length data))
 
-)
+; )
+(defmethod! Histogram ((data list) (bins integer))
+    :initvals '((0 5 2 8 4.5 9 1 0.3 4 5 0.4 -0.3 5 13) 5)
+    :indoc '("list" "integer")
+    :icon 000
+    :doc "Histogram"
+    (setq min-val (list-min data))
+    (setq max-val (list-max data))
+    (setq bin-size (/ (- max-val min-val) bins))
+    (stable-sort data #'<)
+    (setq histo nil)
+    (loop for b from 1 to bins do
+        (setq lower (+ min-val (* bin-size (- b 1))))
+        (setq upper (+ lower bin-size))
+        (setq counter 0)
+        (loop for d in data collect
+            (if (and (>= d lower) (< d upper))
+                (setq counter (+ counter 1))))
+        (setq histo (append histo (list (om-make-point lower counter)))))
+    (make-instance 'bpf :point-list histo))
+    
+; ;--------------- PCA ---------------
+; (defmethod! PCA ((data list))
+;     :initvals '(((10 3 2) (-30 1 2) (0 0 1) (45 0 3) (-50 3 2)))
+;     :indoc '("list")
+;     :icon 000
+;     :doc "PCA"
+;     (mat-trans (loop for dim-row in (mat-trans data) collect 
+;         (om- dim-row (car (list-moments dim-row '(0))))
+;     ))
+
+; )
 #| 
     TODO:
         - KDTree
