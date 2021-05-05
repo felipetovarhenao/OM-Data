@@ -12,7 +12,7 @@
     (setq i 0)
     (setq out nil)
     (while (< i (length source))
-        (if (eq (nth i source) n)
+        (if (equal (nth i source) n)
             (setq out (flat (list out i))))
         (setq i (+ i 1)))
     (remove nil out))
@@ -118,7 +118,7 @@
     (list path-cost (reverse path-posn)))
 
 ; -------------- M E T H O D S ---------------------
-
+#| 
 ; -------------- Distortion ---------------------
 (defmethod! Distortion ((mc-list list) (dist number))
     :initvals '((100 200 300 400 500) 1.125)
@@ -139,6 +139,55 @@
             (f->mc output))
         (loop for mc-l in mc-list collect
             (Distortion mc-l dist))))
+ |#
+
+; -------------- Distortion ---------------------
+(defmethod! Distortion ((mc-list list) (dist number) &optional (mc-fund nil))
+    :initvals '((6000 6400 6700 7200) 1.125 nil)
+    :indoc '("list or score sequence" "distortion index" "integer")
+    :icon 000
+    :doc "Applies spectral distortion to a list of midicents, given a distortion index d. In other words, it expands or compresses the intervals in relation to the lowest midicent value in the input list.
+    
+    Examples:  
+    (distortion '(6000 6400 6700 7200) 1.125) => (6000 6450 6788 7350)
+    (distortion '(6000 6400 6700 7200) 1.125 6000) => (6000 6450 6788 7350)
+    (distortion '(6000 6400 6700 7200) 1.125 7200) => (5850 6300 6638 7200)
+    "
+    (if (equal mc-fund nil)
+        (progn 
+            (setq mc-fund (list-min (flat mc-list)))
+            (setq fq0 (mc->f mc-fund)))
+        (setq fq0 (mc->f mc-fund)))
+    (if (eq (depth mc-list) 1)
+        (progn
+            (setq fqlist (mc->f mc-list))
+            ; (stable-sort fqlist #'<)
+            (if (equal fq0 nil)
+                (setq fq0 (list-min fqlist))
+            )
+            (setq output (loop for fq in fqlist collect
+                (* fq0 (expt (/ fq fq0) dist))))
+            (f->mc output))
+        (loop for mc-l in mc-list collect
+            (Distortion mc-l dist mc-fund))))
+
+(defmethod! Distortion ((self chord-seq) (dist number) &optional (mc-fund nil))
+    (make-instance 'chord-seq :lmidic (Distortion (lmidic self) dist mc-fund) :lonset (lonset self) :ldur (ldur self) :lvel (lvel self) :loffset (loffset self) :lchan (lchan self)))
+
+(defmethod! Distortion ((m-seq multi-seq) (dist number) &optional (mc-fund nil))
+    (make-instance 'multi-seq :chord-seqs (loop for self in (chord-seqs m-seq) collect
+        (make-instance 'chord-seq :lmidic (Distortion (lmidic self) dist mc-fund) :lonset (lonset self) :ldur (ldur self) :lvel (lvel self) :loffset (loffset self) :lchan (lchan self))))) 
+
+(defmethod! Distortion ((self voice) (dist number) &optional (mc-fund nil))
+    (setq new-chords (loop for ch in (chords self) collect 
+        (make-instance 'chord :lmidic (Distortion (lmidic ch) dist mc-fund) :lvel (lvel ch) :loffset (loffset ch) :ldur (ldur ch) :lchan (lchan ch))))
+    (make-instance 'voice :tree (tree self) :chords new-chords :tempo (tempo self) :legato (legato self) :ties (ties self)))
+
+(defmethod! Distortion ((self poly) (dist number) &optional (mc-fund nil))
+    (setq voice-list 
+        (loop for v in (voices self) collect
+            (Distortion v dist mc-fund)))
+    (make-instance 'poly :voices voice-list))
 
 ; --------------- Euclidean-distance ---------------
 (defmethod! Euclidean-distance ((a-list list) (b-list list) (weights list))
@@ -1047,7 +1096,13 @@
     :initvals '((0 1 2 3 4 5 6) 2 1)
     :indoc '("list" "integer" "integer")
     :icon 000
-    :doc ""
+    :doc "Parses a list into smaller lists (frames), given a frame length and a hop size.
+
+    Examples:
+
+    (list-frames '(0 1 2 3 4 5 6) 2 1)  =>  ((0 1) (1 2) (2 3) (3 4) (4 5) (5 6))
+    (list-frames '(0 1 2 3 4 5 6) 2 2)  =>  ((0 1) (2 3) (4 5))
+    "
     (setq indices (arithm-ser 0 (- size 1) 1))
     (setq x 0)
     (setq out nil)
@@ -1062,9 +1117,7 @@
     :initvals '((0 2 1 3 2 4 3 5 4 6 5 4 3 2 1 0) 1)
     :indoc '("list" "integer")
     :icon 000
-    :doc "Takes a list and computes a Nth-order transition probability matrix of the elements (states) in the list.
-
-    markov-build is meant to be used along with markov-run.
+    :doc "Takes a list and computes a Nth-order transition probability matrix of the elements (states) in the list. MARKOV-BUILD is meant to be used along with MARKOV-RUN.
     "
     (setq data (List-frames data order 1))
     (setq thin-data (reverse (remove-dup data 'equal 1)))
@@ -1088,18 +1141,26 @@
         (setq out (append out (list current-row))))
     out)
 
-(defmethod! Markov-run ((matrix list) (iterations integer))
-    :initvals '('(((0) 0 0 1 0 0) ((1) 1/2 0 0 1/2 0) ((2) 0 2/3 0 0 1/3) ((3) 0 0 1 0 0) ((4) 0 0 0 1 0)) 5)
-    :indoc '("list" "integer")
+(defmethod! Markov-run ((matrix list) (iterations integer) &optional (initial nil))
+    :initvals '('(((0) 0 0 1 0 0) ((1) 1/2 0 0 1/2 0) ((2) 0 2/3 0 0 1/3) ((3) 0 0 1 0 0) ((4) 0 0 0 1 0)) 5 nil)
+    :indoc '("list" "integer" "atom or list")
     :icon 000
-    :doc "Takes a transition probability matrix and outputs a sequence of a given length.
-
-    markov-run is meant to be used along with markov-build.
+    :doc "Takes a transition probability matrix and outputs a sequence of a given length. MARKOV-RUN is meant to be used along with MARKOV-BUILD.
     "
     (setq states (car (mat-trans matrix)))
-    (setq current-state (nth-random states))
     (setq output nil)
 
+    ; initialize first state
+    (if (equal initial nil)
+        (setq current-state (nth-random states))
+        (progn
+            (setq positions (get-posn initial (car (mat-trans states))))
+            (if (eq positions nil)
+                (error "
+                    
+                    INITIAL STATE MUST BELONG TO INPUT MATRIX.
+                ")
+                (setq current-state (nth (nth-random positions) states)))))
     (loop for rep from 0 to (- iterations 1) do
         (setq output (append output (list (car current-state))))
         (setq row-index (position current-state states :test 'equal))
