@@ -94,8 +94,10 @@ P,UL,LI, TD {
 <br><font color=882222><b>Description:</b></font><p>
 Applies spectral distortion to a list of midicents, given a distortion index d. In other words, it expands or compresses the intervals in relation to the lowest midicent value in the input list.<br>
     <br>
-    Example:  <br>
-    (distortion '(100 200 300 400 500) 1.125) =&gt; (100 212 326 438 550)<br>
+    Examples:  <br>
+    (distortion '(6000 6400 6700 7200) 1.125) =&gt; (6000 6450 6788 7350)<br>
+    (distortion '(6000 6400 6700 7200) 1.125 6000) =&gt; (6000 6450 6788 7350)<br>
+    (distortion '(6000 6400 6700 7200) 1.125 7200) =&gt; (5850 6300 6638 7200)<br>
     <br>
 </p><br><br></td></tr>
 <td class=center colspan=2>

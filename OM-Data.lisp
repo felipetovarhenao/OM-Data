@@ -30,7 +30,7 @@
             List-quantize
             List-mod
             Posn-map
-            Pick-rand
+            Pick-random
             List-wrap
             List-fold
             Nested-position
@@ -46,6 +46,7 @@
             Shift-posn
             Chroma-count
             IC-vector
+            IC-cycle
             Mc-clip
             Mc-wrap
             ) nil)

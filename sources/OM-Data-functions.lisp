@@ -1171,8 +1171,21 @@
                 (setq current-state choice))
             (setq current-state (nth-random states))))
     output)
+
+;--------------- PCA ---------------
+(defmethod! PCA ((data list))
+    :initvals '(((10 3 2) (-30 1 2) (0 0 1) (45 0 3) (-50 3 2)))
+    :indoc '("list")
+    :icon 000
+    :doc "PCA"
+    (mat-trans (loop for dim-row in (mat-trans data) collect 
+        (om- dim-row (car (list-moments dim-row '(0))))
+    ))
+
+)
 #| 
     TODO:
         - KDTree
         - Granulate
+        - PCA
  |#
