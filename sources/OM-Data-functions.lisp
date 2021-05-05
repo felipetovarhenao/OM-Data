@@ -1133,10 +1133,11 @@
     matrix
 )
 
-(defmethod! Markov-run ((matrix list) (iterations integer) &optional (initial nil))
-    :initvals '('(((0) 0 0 1 0 0) ((1) 1/2 0 0 1/2 0) ((2) 0 2/3 0 0 1/3) ((3) 0 0 1 0 0) ((4) 0 0 0 1 0)) 5 nil)
-    :indoc '("list" "integer" "atom or list")
+(defmethod! Markov-run ((matrix list) (iterations integer) &optional (initial nil) (mode '1))
+    :initvals '('(((0) 0 0 1 0 0) ((1) 1/2 0 0 1/2 0) ((2) 0 2/3 0 0 1/3) ((3) 0 0 1 0 0) ((4) 0 0 0 1 0)) 5 nil '1)
+    :indoc '("list" "integer" "atom or list" "menu")
     :icon 000
+    :menuins '((3 (("no reset" '0) ("allow reset" '1))))
     :doc "Takes a transition probability matrix and outputs a sequence of a given length. MARKOV-RUN is meant to be used along with MARKOV-BUILD.
     "
     (setq states (car (mat-trans matrix)))
@@ -1161,7 +1162,12 @@
             (progn 
                 (setq choice (car (pick-random states weights 1)))
                 (setq current-state choice))
-            (setq current-state (nth-random states))))
+            (if (equal mode '0)
+                (progn
+                    (setq rep iterations)
+                    (print "MARKOV-RUN: Sequence reached dead end before desired length")
+                )
+                (setq current-state (nth-random states)))))
     output)
 
 ; (defmethod! Covariance ((data list))
