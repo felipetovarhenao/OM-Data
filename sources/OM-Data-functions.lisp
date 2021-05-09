@@ -392,19 +392,23 @@
                         (loop for x in data collect
                             (expt (- x mean) 2))) 
                         (length data))))
-                (setq skewness
-                    (/ (reduce #'+
-                        (loop for x in data collect
-                            (expt (- x mean) 3))) 
-                        (* (expt st-dev 3) (length data) 1)))
-                (setq kurtosis
-                    (/ (reduce #'+
-                        (loop for x in data collect
-                            (expt (- x mean) 4))) 
-                        (* (expt st-dev 4) (length data))))
+                (if (> (abs st-dev) 0)
+                    (progn 
+                        (setq skewness
+                            (/ (reduce #'+
+                                (loop for x in data collect
+                                    (expt (- x mean) 3))) 
+                                (* (expt st-dev 3) (length data) 1)))
+                        (if (> (abs skewness) 0)
+                            (setq kurtosis
+                                (/ (reduce #'+
+                                    (loop for x in data collect
+                                        (expt (- x mean) 4))) 
+                                    (* (expt st-dev 4) (length data))))))
+                    (progn (setq skewness nil) (setq kurtosis nil)))
                 (posn-match (list mean st-dev skewness kurtosis) moments))
             (posn-match (list (car data) 0 nil nil) moments))
-            (loop for d in data collect (List-moments d moments))))
+        (loop for d in data collect (List-moments d moments))))
 
 ;--------------- List-Zscore ---------------
 (defmethod! List-Zscore ((x number) (l list))
@@ -486,7 +490,6 @@
 
         ; keep a history of last k-centroids
         (setq pk-centroids (copy-list k-centroids))
-
         ; assign a k-centroid to each data item based on proximity
         (loop for ld in labeled-data and ld-pos from 0 to (length labeled-data) do
             (setq nearest-k (car (NNS (car ld) k-centroids weights)))
@@ -503,7 +506,7 @@
             (setq current-k (mat-trans current-k))
             (if (not (equal current-k nil))
                 (progn 
-                    (setq new-centroid (flat (List-moments current-k '(0))))
+                    (setq new-centroid (flat (List-moments current-k (list 0))))
                     (setf (nth ck k-centroids) new-centroid))))
 
         ; stop loop if centroids do not change
@@ -1130,9 +1133,9 @@
                     (setq next-item (nth (+ pos 1) data))
                     (setq col (position next-item thin-data :test 'equal))
                     (setf (nth (+ col 1) (nth row matrix)) (+ 1 (nth (+ col 1) (nth row matrix))))))))
-    matrix
-)
+    matrix)
 
+;--------------- Markov-run ---------------
 (defmethod! Markov-run ((matrix list) (iterations integer) &optional (initial nil) (mode '1))
     :initvals '('(((0) 0 0 1 0 0) ((1) 1/2 0 0 1/2 0) ((2) 0 2/3 0 0 1/3) ((3) 0 0 1 0 0) ((4) 0 0 0 1 0)) 5 nil '1)
     :indoc '("list" "integer" "atom or list" "menu")
@@ -1169,16 +1172,7 @@
                 )
                 (setq current-state (nth-random states)))))
     output)
-
-; (defmethod! Covariance ((data list))
-;     :initvals '(((10 3 2) (-30 1 2) (0 0 1) (45 0 3) (-50 3 2)))
-;     :indoc '("list")
-;     :icon 000
-;     :doc "Covariance"
-;     (setq mat-center (flat (list-moments (mat-trans data) '(0))))
-;     (setq datasize (length data))
-
-; )
+;--------------- Histogram ---------------
 (defmethod! Histogram ((data list) (bins integer))
     :initvals '((0 5 2 8 4.5 9 1 0.3 4 5 0.4 -0.3 5 13) 5)
     :indoc '("list" "integer")
@@ -1198,7 +1192,62 @@
                 (setq counter (+ counter 1))))
         (setq histo (append histo (list (om-make-point lower counter)))))
     (make-instance 'bpf :point-list histo))
-    
+
+
+;--------------- Multi-join---------------
+(defmethod! Multi-join ((seqs list) &optional (mode '0) (concat-offset nil))
+    :initvals '(nil '0 nil)
+    :indoc '("multi-seq or poly" "join mode" "list")
+    :icon 000
+    :doc "chord-seq" 
+    :menuins '((1 (("concat" '0) ("merge" '1))))
+    (if (and (equal mode '0) (equal concat-offset nil))
+        (setq concat-offset 
+            (cdr (dx->x 0 (loop for s in seqs collect
+                (list-max (lonset s)))))))
+    (print concat-offset)
+    (setq out (car seqs))
+    (setq seq-list (cdr seqs))
+    (loop for s in seq-list and i from 0 to (- (length seq-list) 1) do
+        (if (equal mode '0)
+            (setq out (concat out s (nth i concat-offset)))
+            (setq out (merger out s))))
+    out)
+
+(defmethod! Multi-join ((self multi-seq) &optional (mode '0) (concat-offset nil))
+    (setq seqs (chord-seqs self))
+    (Multi-join seqs mode concat-offset))
+
+(defmethod! Multi-join ((self poly) &optional (mode '0) (concat-offset nil))
+    (setq seqs (voices self))
+    (Multi-join seqs mode concat-offset))
+
+;--------------- Get-transients ---------------
+(defmethod! Get-transients ((self chord-seq) (threshold number))
+    :initvals '(nil 0.05)
+    :indoc '("sequence" "number")
+    :icon 000
+    :doc "chord-seq" 
+    (setq energy (list 0))
+    (setq velocities (lvel self))
+    (setq min-vel (list-min velocities))
+    (setq velocities (append (list (list min-vel) (list min-vel)) velocities))
+    (setq onsets (lonset self))
+    (setq out nil)
+    (loop for v in velocities and i from 0 to (- (length velocities) 1) do
+        (setq vel (log (reduce #'+ v)))
+        (if (> i 0)
+            (progn 
+                (setq val (max 0 (- vel pvel)))
+                (if (> val threshold)
+                    (setq out (append out (list (nth (- i 2) onsets)))))))
+        (setq pvel vel))
+    out)
+
+(defmethod! Get-transients ((self multi-seq) (threshold number))
+    (Get-transients (Multi-join self 1) threshold)
+)
+
 ; ;--------------- PCA ---------------
 ; (defmethod! PCA ((data list))
 ;     :initvals '(((10 3 2) (-30 1 2) (0 0 1) (45 0 3) (-50 3 2)))
