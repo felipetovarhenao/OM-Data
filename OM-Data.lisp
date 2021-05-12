@@ -39,6 +39,7 @@
             Unique-seq
             Unique-scramble
             List-frames
+            Histogram
             ) nil)
         ("4-Midicents" nil nil (
             Distortion
@@ -57,6 +58,22 @@
         ("6-Score" nil nil (
             Segment-seq
             Extract-channel
+            Multi-join
+            Get-transients
+            ) nil)
+        ("7-Other" nil nil (
+            L-system
+            1D-Turtle
+            2D-Turtle
             ) nil)
     )
 )
+
+(print "
+    ***************************
+        OM-Data successfully loaded!
+
+       [www.felipe-tovar-henao.com]
+                        2021
+    ***************************
+")

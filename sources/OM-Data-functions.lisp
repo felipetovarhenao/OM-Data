@@ -7,7 +7,7 @@
 
 (in-package :om)
 
-; -------------- (HIDDEN) FUNCTIONS -------------------
+; -------------- (UNLISTED) FUNCTIONS -------------------
 (defun get-posn (n source)
     (setq i 0)
     (setq out nil)
@@ -117,29 +117,19 @@
             (setq path-posn (append path-posn (list (list x y)))))
     (list path-cost (reverse path-posn)))
 
+; --------------- string-rewrite ---------------
+(defun string-rewrite (axiom rules iterations)
+    (setq axiom (flat (list axiom) 1))
+    (loop for n from 0 to (- iterations 1) do
+        (loop for a in axiom and i from 0 to (- (length axiom) 1) do
+            (loop for r in rules do
+                (if (equal a (first r))
+                    (progn
+                        (setf (nth i axiom) (second r))))))
+        (setq axiom (flat axiom 1)))
+    axiom)
+
 ; -------------- M E T H O D S ---------------------
-#| 
-; -------------- Distortion ---------------------
-(defmethod! Distortion ((mc-list list) (dist number))
-    :initvals '((100 200 300 400 500) 1.125)
-    :indoc '("midicent list" "distortion index")
-    :icon 000
-    :doc "Applies spectral distortion to a list of midicents, given a distortion index d. In other words, it expands or compresses the intervals in relation to the lowest midicent value in the input list.
-    
-    Example:  
-    (distortion '(100 200 300 400 500) 1.125) => (100 212 326 438 550)
-    "
-    (if (eq (depth mc-list) 1)
-        (progn
-            (setq fqlist (mc->f mc-list))
-            (stable-sort fqlist #'<)
-            (setq fq0 (list-min fqlist))
-            (setq output (loop for fq in fqlist collect
-                (* fq0 (expt (/ fq fq0) dist))))
-            (f->mc output))
-        (loop for mc-l in mc-list collect
-            (Distortion mc-l dist))))
- |#
 
 ; -------------- Distortion ---------------------
 (defmethod! Distortion ((mc-list list) (dist number) &optional (mc-fund nil))
@@ -343,7 +333,7 @@
     Example:
     (shift-posn '(3600 5200 6700 7000) '(1 2 3)) => ((4000 5500 7000 7200) (4300 5800 7200 7600) (4600 6000 7600 7900))
     " 
-    (setq filled-range (Fill-range chord-list 0 20000))
+    (setq filled-range (Fill-range chord-list 0 12700))
     (loop for note in chord-list collect
         (nth (+ (position note filled-range) n-step) filled-range)))
 
@@ -820,35 +810,6 @@
     (mapcar #'(lambda (input) (Mc-clip input lower-bound upper-bound)) mc-list))
 
 ;--------------- Mc-wrap ---------------
-; (defmethod! Mc-wrap ((mc number) (lower-bound number) (upper-bound number))
-;     :initvals '(5500 6000 7200)
-;     :indoc '("list" "number" "number")
-;     :icon 000
-;     :doc ""
-;     (setq range (abs (- upper-bound lower-bound)))
-;     (setq numoct (* 1200 (max 1 (nth-value 0 (ceiling range 1200)))))
-;     (setq lowdif (mod (abs (- mc lower-bound)) numoct))
-;     (setq hidif (mod (abs (- mc upper-bound)) numoct))
-;     (setq out mc)
-;     (
-;         cond
-;         (
-;             (< mc lower-bound)
-;             (progn 
-;                 (setq out (- upper-bound hidif))
-;                 (if    
-;                     (> hidif range)
-;                     (setq out (+ out 1200)))))
-;         (
-;             (>= mc upper-bound)
-;             (progn 
-;                 (setq out (+ lower-bound lowdif))
-;                 (if    
-;                     (> lowdif range)
-;                     (setq out (- out 1200))))))
-;     out)
-
-;--------------- Mc-wrap ---------------
 (defmethod! Mc-wrap ((mc number) (lower-bound number) (upper-bound number))
     :initvals '(5500 6000 7200)
     :indoc '("number or list" "number" "number")
@@ -1163,7 +1124,7 @@
         (setq weights (cdr (nth row-index matrix)))
         (if (> (reduce-tree weights #'+) 0)
             (progn 
-                (setq choice (car (pick-random states weights 1)))
+                (setq choice (car (pick-random states weightss 1)))
                 (setq current-state choice))
             (if (equal mode '0)
                 (progn
@@ -1199,13 +1160,12 @@
     :initvals '(nil '0 nil)
     :indoc '("multi-seq or poly" "join mode" "list")
     :icon 000
-    :doc "chord-seq" 
+    :doc "Joins a list of score objects, either by merging or concatenating them." 
     :menuins '((1 (("concat" '0) ("merge" '1))))
     (if (and (equal mode '0) (equal concat-offset nil))
         (setq concat-offset 
             (cdr (dx->x 0 (loop for s in seqs collect
                 (list-max (lonset s)))))))
-    (print concat-offset)
     (setq out (car seqs))
     (setq seq-list (cdr seqs))
     (loop for s in seq-list and i from 0 to (- (length seq-list) 1) do
@@ -1227,7 +1187,7 @@
     :initvals '(nil 0.05)
     :indoc '("sequence" "number")
     :icon 000
-    :doc "chord-seq" 
+    :doc "Outputs a list of onsets corresponding to detected transients in a score object." 
     (setq energy (list 0))
     (setq velocities (lvel self))
     (setq min-vel (list-min velocities))
@@ -1245,20 +1205,94 @@
     out)
 
 (defmethod! Get-transients ((self multi-seq) (threshold number))
-    (Get-transients (Multi-join self 1) threshold)
-)
+    (Get-transients (Multi-join self 1) threshold))
 
-; ;--------------- PCA ---------------
-; (defmethod! PCA ((data list))
-;     :initvals '(((10 3 2) (-30 1 2) (0 0 1) (45 0 3) (-50 3 2)))
-;     :indoc '("list")
-;     :icon 000
-;     :doc "PCA"
-;     (mat-trans (loop for dim-row in (mat-trans data) collect 
-;         (om- dim-row (car (list-moments dim-row '(0))))
-;     ))
+; --------------- L-system ---------------
+(defmethod! L-system ((axiom number) (rules list) (generations integer))
+    :initvals '('(x f) '((x (x + y f + + y f - f x - - f x f x - y f +)) (y (- f x + y f y f + + y f + f x - - f x - y))) 3)
+    :indoc '("atom" "list" "integer")
+    :icon 000
+    :doc "Outputs a deterministically generated sequence of elements, given an axiom, a list of production rules, and a number of generations." 
+    (string-rewrite axiom rules generations))
 
-; )
+(defmethod! L-system ((axiom string) (rules list) (generations integer))
+    (string-rewrite axiom rules generations))
+
+(defmethod! L-system ((axiom list) (rules list) (generations integer))
+    (string-rewrite axiom rules generations))
+
+; --------------- 1D-Turtle ---------------
+(defmethod! 1D-Turtle ((lsys list) (dir-rules list) (size-rules list)(memory-rules list) &optional (x 0))
+    :initvals '(([ x [ + f ] f - ] x [ + f ] f [ + [ f - ] f [ + x [ + f ] f ] x [ + f ] f ] [ f - ] f [ + x [ + f ] f ] x [ + f ] f) '((f 1)) '((+ 1) (- -1)) '(([ 1) (] 0)) 0)
+    :indoc '("list" "list" "list" "list" "number")
+    :icon 000
+    :doc "Turtle"
+    (setq x 0)
+    (setq size 0)
+    (setq out (list x))
+    (setq memory nil)
+    (loop for s in lsys do
+        (loop for dr in dir-rules do
+            (if (equal s (first dr))
+                (progn
+                    (setq x (+ x (* (second dr) size)))
+                    (setq out (append out (list x))))))
+        (loop for sr in size-rules do
+            (if (equal s (first sr))
+                (progn
+                    (setq size (+ size (second sr))))))
+        (loop for mr in memory-rules do
+            (if (equal s (first mr))
+                (progn
+                    (if (equal (second mr) 1)
+                        (setq memory (append memory (list (list x size))))
+                    )
+                    (if (equal (second mr) 0)
+                        (progn 
+                            (setq state (car (last memory)))
+                            (setq x (first state))
+                            (setq size (second state))
+                            (setq memory (butlast memory))))))))
+    out) 
+
+; --------------- 2D-Turtle ---------------
+(defmethod! 2D-Turtle ((lsys list) (mag-rules list) (theta-rules list) (memory-rules list) &optional (theta 0))
+    :initvals '(([ f - f ] + f [ f - f ] + f [ f - f ] + f [ f - f ] + f [ f - f ] + f [ f - f ] + f) '((f 1)) '((+ 60) (- -60)) '(([ 1) (] 0)) 0)
+    :indoc '("list" "list" "list" "list" "number")
+    :icon 000
+    :doc "Turtle"
+    (setq x 0)
+    (setq y 0)
+    (setq mag 0)
+    (setq memory nil)
+    (setq out (list (om-make-point x y)))
+    (loop for s in lsys do
+        (loop for mr in mag-rules do
+            (if (equal s (first mr))
+                (progn
+                    (setq mag (second mr))
+                    (setq x (+ x (* mag (cos (deg->rad theta)))))
+                    (setq y (+ y (* mag (sin (deg->rad theta)))))
+                    (setq out (append out (list (om-make-point x y)))))))
+        (loop for tr in theta-rules do
+            (if (equal s (first tr))
+                (progn
+                    (setq theta (+ theta (second tr))))))
+        (loop for mr in memory-rules do
+            (if (equal s (first mr))
+                (progn 
+                    (if (equal (second mr) 1)
+                        (setq memory (append memory (list (list x y theta mag))))
+                    )
+                    (if (equal (second mr) 0)
+                        (progn
+                            (setq state (car (last memory)))
+                            (setq x (first state))
+                            (setq y (second state))
+                            (setq theta (third state))
+                            (setq mag (fourth state))
+                            (setq memory (butlast memory))))))))
+    (make-instance 'bpc :point-list out))
 #| 
     TODO:
         - KDTree

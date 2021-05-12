@@ -42,7 +42,8 @@ OM-Data
 │   ├── N-occurances
 │   ├── Unique-seq
 │   ├── Unique-scramble
-│   └── List-frames
+│   ├── List-frames
+│   └── Histogram
 │
 ├── 4-Midicents
 │   ├── Distortion
@@ -58,8 +59,15 @@ OM-Data
 │   ├── Rhythmicon
 │   └── Euclidean-rhythm
 │
-└── 6-Score
-    ├── Segment-seq
-    └── Extract-channel
+├── 6-Score
+│   ├── Segment-seq
+│   ├── Extract-channel
+│   ├── Multi-join
+│   └── Get-transients
+│
+└── 7-Other
+    ├── L-system
+    ├── 1D-Turtle
+    └── 2D-Turtle
 
  ```
