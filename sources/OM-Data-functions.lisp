@@ -279,6 +279,18 @@
     (mapcar #'(lambda (input) 
         (List-quantize input b-list accuracy)) a-list))
 
+(defmethod! List-quantize ((a-list chord-seq) (b-list list) (accuracy number))
+    (setq mc (lmidic a-list))
+    (setq mc (mapcar #'(lambda (input) 
+        (List-quantize input b-list accuracy)) mc))
+    (make-instance 'chord-seq 
+        :lmidic mc
+        :lonset (lonset a-list)
+        :ldur (ldur a-list)
+        :lvel (lvel a-list)
+        :loffset (loffset a-list)
+        :lchan (lchan a-list)))
+
 ; --------------- List-mod ---------------
 (defmethod! List-mod ((input-list list) (n number))
     :initvals '((-3 -2 -1 0 1 2 3) 2)
@@ -536,6 +548,18 @@
     (setq nested-target (Nested-nth ab-positions (second (mat-trans ab-matrix))))
     (loop for a in a-list and nt in nested-target and f in interp-pts collect
         (nested-mix a nt f)))  
+
+(defmethod! X-interpolation ((a-list chord-seq) (b-list list) (traj list))
+    (setq mc (lmidic a-list))
+    (setq mc (mapcar #'(lambda (input) 
+        (X-interpolation input b-list traj)) mc))
+    (make-instance 'chord-seq 
+        :lmidic mc
+        :lonset (lonset a-list)
+        :ldur (ldur a-list)
+        :lvel (lvel a-list)
+        :loffset (loffset a-list)
+        :lchan (lchan a-list)))
 
 ; -------------- Nested-position ---------------------
 (defmethod! Nested-position ((a list) (b-list list))
@@ -1220,24 +1244,24 @@
 
 (defmethod! L-system ((axiom list) (rules list) (generations integer))
     (string-rewrite axiom rules generations))
-
+#| 
 ; --------------- 1D-Turtle ---------------
-(defmethod! 1D-Turtle ((lsys list) (dir-rules list) (size-rules list)(memory-rules list) &optional (x 0))
+(defmethod! 1D-Turtle ((lsys list) (mag-rules list) (sign-rules list)(memory-rules list) &optional (x 0))
     :initvals '(([ x [ + f ] f - ] x [ + f ] f [ + [ f - ] f [ + x [ + f ] f ] x [ + f ] f ] [ f - ] f [ + x [ + f ] f ] x [ + f ] f) '((f 1)) '((+ 1) (- -1)) '(([ 1) (] 0)) 0)
     :indoc '("list" "list" "list" "list" "number")
     :icon 000
     :doc "Turtle"
-    (setq x 0)
+    (setq y 0)
     (setq size 0)
-    (setq out (list x))
+    (setq out (list y))
     (setq memory nil)
     (loop for s in lsys do
-        (loop for dr in dir-rules do
-            (if (equal s (first dr))
+        (loop for mr in mag-rules do
+            (if (equal s (first mr))
                 (progn
-                    (setq x (+ x (* (second dr) size)))
-                    (setq out (append out (list x))))))
-        (loop for sr in size-rules do
+                    (setq y (+ y (* (second mr) size)))
+                    (setq out (append out (list y))))))
+        (loop for sr in sign-rules do
             (if (equal s (first sr))
                 (progn
                     (setq size (+ size (second sr))))))
@@ -1245,16 +1269,16 @@
             (if (equal s (first mr))
                 (progn
                     (if (equal (second mr) 1)
-                        (setq memory (append memory (list (list x size))))
+                        (setq memory (append memory (list (list y size))))
                     )
                     (if (equal (second mr) 0)
                         (progn 
                             (setq state (car (last memory)))
-                            (setq x (first state))
+                            (setq y (first state))
                             (setq size (second state))
                             (setq memory (butlast memory))))))))
     out) 
-
+ |#
 ; --------------- 2D-Turtle ---------------
 (defmethod! 2D-Turtle ((lsys list) (mag-rules list) (theta-rules list) (memory-rules list) &optional (theta 0))
     :initvals '(([ f - f ] + f [ f - f ] + f [ f - f ] + f [ f - f ] + f [ f - f ] + f [ f - f ] + f) '((f 1)) '((+ 60) (- -60)) '(([ 1) (] 0)) 0)
@@ -1293,6 +1317,98 @@
                             (setq mag (fourth state))
                             (setq memory (butlast memory))))))))
     (make-instance 'bpc :point-list out))
+
+; --------------- Risset rhythm---------------
+(defun riss-onsets (onsets totdur period v mode)
+    (setq totdur (list-max onsets))
+    (setq v-exp (expt 2 v))
+    (setq tl nil)
+    (loop for x from 0 to (- v-exp 1) do
+        (setq tl (append tl (om+ (butlast onsets) (om* totdur x)))))
+    (setq tl (om/ (append tl (list (* v-exp totdur))) (* v-exp totdur)))
+    (cond 
+        (
+            (equal mode 0)
+            (setq te (om-log (om+ 1 tl) 2)))
+        (
+            (equal mode 1)
+            (setq te (om- (om^ 2 tl) 1))))
+    (om* te period))
+
+(defun riss-rates (te totdur period v mode)
+    (setq normalized (om/ te period))
+    (if (equal mode 0)
+        (setq normalized (om^ 2 (om+ v normalized)))
+        (progn 
+            (setq minval (expt 2 v))
+            (setq maxval (expt 2 (+ v 1)))
+            (setq normalized (om-scale (om* (om+ (om-log (om+ normalized 1) 2) 1) minval) maxval minval))
+        )
+    )
+    (setq rates (om* (/ (* totdur (log 2)) period) normalized))
+    rates)
+
+(defun riss-amps (te period voices v mode)
+    (setq index-list (om/ te period))
+    (if (equal mode 1)
+        (setq index-list (om- 1 index-list)))
+    (setq amp (om+ 0.5 (om* -0.5 (om-cos (om* (* pi 2) (om+ (/ v voices) (om/ index-list voices))))))))
+
+
+(defmethod! Risset-rhythm ((self chord-seq) (speed number) (voices integer) (rep integer) &optional (onset-mode '0) (mc-mode '2))
+    :initvals '((make-instance 'chord-seq :lmidic '(6000 6200 6400 6700) :lonset '(0 250)) 1.0 4 4 '0 '2)
+    :indoc '("chord-seq" "number" "integer" "integer" "menu")
+    :icon 000
+    :menuins '((4 (("accelerando" '0) ("ritardando" '1))) (5 (("preserve pitch" '0) ("period-wise transp." '1) ("chord-wise transp." '2))))
+    :doc "Risset rhythm"
+
+    (setq mc-list (lmidic self))
+    (setq onsets (lonset self))
+    (setq durs (ldur self))
+    (setq vels (lvel self))
+    (setq offsets (loffset self))
+    (setq chans (lchan self))
+    (setq leg (legato self))
+
+    (setq out nil)
+    (setq totdur (list-max onsets))
+    (setq period (* totdur speed))
+    (setq fq-list (mc->f mc-list))
+
+    (loop for v from 0 to (- voices 1) do
+        (setq v-exp (expt 2 v))
+        (setq new-onsets (riss-onsets onsets totdur period v onset-mode))
+        (setq rates (riss-rates new-onsets totdur period v onset-mode))
+        (setq amps (riss-amps new-onsets period voices v onset-mode))
+        (setq new-mc nil)
+        (setq new-vels nil)
+        (setq new-durs nil)
+        (loop for f in (flat (repeat-n fq-list v-exp) 1) and v in (flat (repeat-n vels v-exp) 1) and d in (flat (repeat-n durs v-exp) 1) and a in (butlast amps) and r in (butlast rates) and n from 0 to (- (length rates) 1) do
+            (setq new-durs (append new-durs (list (om/ d r))))
+            (if (equal mc-mode 1)
+                (progn
+                    (setq r-index (* (nth-value 0 (floor (/ n (length durs)))) (length durs)))
+                    (setq r (nth r-index rates))))
+            (if (> mc-mode 0)
+                (setq f (om* r f)))
+            (setq new-mc (append new-mc (list (f->mc f))))
+            (setq new-vels (append new-vels (list (om* v a)))))
+        (setq te (flat 
+            (loop for x from 0 to (- rep 1) collect
+                (om+ (butlast new-onsets) (* x period))
+            ) 1))
+        (setq te (append te (list (* rep (list-max new-onsets)))))
+        (setq seq (make-instance 'chord-seq 
+            :lmidic (flat (repeat-n new-mc rep) 1) 
+            :lonset te 
+            :ldur (flat (repeat-n new-durs rep) 1)  
+            :lvel (flat (repeat-n new-vels rep) 1)
+            :loffset (flat (repeat-n offsets (* rep v-exp)) 1)
+            :lchan (flat (repeat-n chans (* rep v-exp)) 1)
+            :legato leg))
+        (setq out (append out (list seq))))
+    (reverse out))
+
 #| 
     TODO:
         - KDTree

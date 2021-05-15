@@ -54,6 +54,7 @@
         ("5-Rhythm" nil nil (
             Rhythmicon
             Euclidean-rhythm
+            Risset-rhythm
             ) nil)
         ("6-Score" nil nil (
             Segment-seq
