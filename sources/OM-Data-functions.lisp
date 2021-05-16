@@ -246,7 +246,7 @@
     (optimal-sorting '(0 0 0 2) '((0 1 2 3) (2 3 4 5) (1 2 3 4)) nil) => ((0 0 0 2) (0 1 2 3) (1 2 3 4) (2 3 4 5))
     "  
     (setq neighbors (NNS st-list other-lists weights))
-    (setq remaining (copy-list neighbors))
+    (setq remaining (copy-tree neighbors))
     (setq output nil)
     (loop for n in neighbors do
         (setq output (append output (list (car remaining))))
@@ -270,7 +270,7 @@
     (setq distances nil)
     (loop for b in b-list collect
         (setq distances (append distances (list (abs (- b a))))))
-    (setq sorted-distances (copy-list distances))
+    (setq sorted-distances (copy-tree distances))
     (stable-sort sorted-distances #'<)
     (+ (* accuracy (nth (nth 0 (get-posn (car sorted-distances) distances)) b-list)) (* a (- 1 accuracy)))
     )
@@ -324,7 +324,7 @@
     (fill-range '(3600 5200 6700 7000) 6000 7200) => (6000 6400 6700 7000 7200)
     " 
     (setq chord-list (remove-dup (List-mod chord-list 1200) #'eq 1))
-    (setq base-chord (copy-list chord-list))
+    (setq base-chord (copy-tree chord-list))
     (setq o 0)
     (setq offset (* 1200 (values (floor (/ lower-bound 1200)))))
     (setq numoctaves (values (ceiling (/ (abs (- upper-bound lower-bound)) 1200.0))))
@@ -377,7 +377,6 @@
     :initvals '((5 2 3 4 5 6) (0 1 2 3))
     :indoc '("list" "list")
     :icon 000
-    :numouts 1
     :outdoc '("mean st-dev skewness kurtosis")
     :doc "Computes the statistical moments of a list of values: population mean, population standard deviation, skewness and kurtosis. 
     The right inlet specifies which moments to put out, by index. For instance, (0 2) outputs the mean and skewness only. The list (0 1 2 3) outputs all four moments.
@@ -491,7 +490,7 @@
     (while (eq convergence-flag nil)
 
         ; keep a history of last k-centroids
-        (setq pk-centroids (copy-list k-centroids))
+        (setq pk-centroids (copy-tree k-centroids))
         ; assign a k-centroid to each data item based on proximity
         (loop for ld in labeled-data and ld-pos from 0 to (length labeled-data) do
             (setq nearest-k (car (NNS (car ld) k-centroids weights)))
@@ -538,7 +537,7 @@
     (setq traj (om/ traj (list-max (om-abs traj))))
     (setq traj (om-clip traj 0.0 1.0))
     (setq interp-pts (nth-value 2 (om-sample traj numpts)))
-    (setq a-table (remove-dup (flat (copy-list a-list)) 'eq 1))
+    (setq a-table (remove-dup (flat (copy-tree a-list)) 'eq 1))
     (stable-sort a-table #'<)
     (setq ab-matrix nil)
     (loop for a in a-table do 
@@ -896,7 +895,7 @@
     (unique-scramble '(0 1 2) 4) => ((0 1 2) (2 0 1) (1 2 0) (0 1 2))
     "
     (setq out (list a-list))
-    (setq current (copy-list a-list))
+    (setq current (copy-tree a-list))
     (loop for i from 1 to (- times 1) do
         (setq unique nil)
         (while (eq unique nil)
@@ -908,7 +907,7 @@
             (if (eq dups 0)
                 (setq unique t)))
         (setq out (append out (list scrambled)))
-        (setq current (copy-list scrambled)))
+        (setq current (copy-tree scrambled)))
     out)
 
 ;--------------- Euclidean-rhythm ---------------
@@ -1279,6 +1278,7 @@
                             (setq memory (butlast memory))))))))
     out) 
  |#
+
 ; --------------- 2D-Turtle ---------------
 (defmethod! 2D-Turtle ((lsys list) (mag-rules list) (theta-rules list) (memory-rules list) &optional (theta 0))
     :initvals '(([ f - f ] + f [ f - f ] + f [ f - f ] + f [ f - f ] + f [ f - f ] + f [ f - f ] + f) '((f 1)) '((+ 60) (- -60)) '(([ 1) (] 0)) 0)
@@ -1342,9 +1342,7 @@
         (progn 
             (setq minval (expt 2 v))
             (setq maxval (expt 2 (+ v 1)))
-            (setq normalized (om-scale (om* (om+ (om-log (om+ normalized 1) 2) 1) minval) maxval minval))
-        )
-    )
+            (setq normalized (om-scale (om* (om+ (om-log (om+ normalized 1) 2) 1) minval) maxval minval))))
     (setq rates (om* (/ (* totdur (log 2)) period) normalized))
     rates)
 
@@ -1354,9 +1352,9 @@
         (setq index-list (om- 1 index-list)))
     (setq amp (om+ 0.5 (om* -0.5 (om-cos (om* (* pi 2) (om+ (/ v voices) (om/ index-list voices))))))))
 
-
+;--------------- Risset-rhyhtm ---------------
 (defmethod! Risset-rhythm ((self chord-seq) (speed number) (voices integer) (rep integer) &optional (onset-mode '0) (mc-mode '2))
-    :initvals '((make-instance 'chord-seq :lmidic '(6000 6200 6400 6700) :lonset '(0 250)) 1.0 4 4 '0 '2)
+    :initvals '((make-instance 'chord-seq :lmidic '(6000 6200 6400 6700) :lonset '(0 250) :ldur '(250)) 2.5 4 4 '0 '2)
     :indoc '("chord-seq" "number" "integer" "integer" "menu")
     :icon 000
     :menuins '((4 (("accelerando" '0) ("ritardando" '1))) (5 (("preserve pitch" '0) ("period-wise transp." '1) ("chord-wise transp." '2))))
@@ -1409,9 +1407,131 @@
         (setq out (append out (list seq))))
     (reverse out))
 
+;--------------- List-median ---------------
+(defmethod! List-median ((l list))
+    :initvals '((4 2 5 6 1 2 0 -4))
+    :indoc '("list")
+    :icon 000
+    :doc "Computes the median of a list of numeric values"
+    (if (eq (depth l) 1)
+        (progn 
+            (setq size (length l))
+            (stable-sort l #'<)
+            (if (oddp size)
+                (progn
+                    (setq index (nth-value 0 (floor (/ size 2))))
+                    (nth index l))
+                (progn
+                    (setq index (/ size 2))
+                    (* (+ (nth (- index 1) l) (nth index l)) 0.5))))
+        (mapcar #'(lambda (input) (List-median input)) l)))
+
+;--------------- List-mode ---------------
+(defmethod! List-mode ((l list))
+    :initvals '((4 2 5 6 1 2 0 -4))
+    :indoc '("list")
+    :icon 000
+    :doc "Computes the mode of a list of numeric values"
+    (if (eq 1 (depth l))
+        (progn 
+            (setq counts
+                (loop for x in l collect
+                    (n-occurances x l)))
+            (if (eq (list-max counts) (list-min counts))
+                nil
+                (remove-dup (posn-match l (get-posn (list-max counts) counts)) 'equal 1)))
+        (mapcar #'(lambda (input) (List-mode input)) l)))
+
+;--------------- nil-matrix ---------------
+(defun nil-matrix (dims)
+    (setq out nil)
+    (loop for d in dims do
+        (setq out (repeat-n out d)))
+    out)
+
+;--------------- Deep-replace ---------------
+(defmethod! Deep-replace ((data list) (path list) new)
+    :initvals '((((0 1) (2 3)) ((4 5 6) (7 8 (9)))) (1 1 2) "foo")
+    :indoc '("list" "list" "list or atom")
+    :icon 000
+    :doc "Replaces any element in a list with a new element, given a list of positions corresponding to each level in the input list."
+    (setq data-copy (copy-tree data))
+    (setq levels (list data-copy))
+    (loop for p in path do
+        (setq x (nth p data-copy))
+        (setq levels (append levels (list x)))
+        (setq data-copy x))
+    (setq levels (reverse levels))
+    (setq path (append (list 0) (reverse path)))
+    (setf (nth 0 levels) new)
+    (loop for p in path and l in levels and n from 0 to (length levels) do
+        (if (and (listp l) (> n 0))
+            (setf (nth p l) new)
+            (setq l new))
+        (setq new l))
+    (car (last levels)))
+
+;--------------- KDTree ---------------
+(defmethod! KDTree ((data-set list))
+    :initvals '(((0 5) (-2 -3) (4 0) (5 -3) (5 7) (0.3 6.5)))
+    :indoc '("list")
+    :icon 000
+    :numouts 2
+    :outdoc '("nodes" "list")
+    :doc "Computes a k-dimensional tree"
+    (setq transp-data (mat-trans data-set))
+    (setq nodes (list-median transp-data))
+    (setq tree (nil-matrix (repeat-n 2 (length nodes))))
+    (loop for d in data-set do
+        (setq branch nil)
+        (loop for n in nodes and i from 0 to (- (length nodes) 1) do
+            (setq val (nth i d))
+            (if (< val n)
+                (setq pos 0)
+                (setq pos 1))
+            (setq branch (append branch (list pos))))
+        (setq update (append (deep-nth tree branch) (list d)))
+        (setq tree (deep-replace tree branch update)))
+    (values-list (list nodes tree))) 
+
+;--------------- Deep-nth ---------------
+(defmethod! Deep-nth ((data list) (path list))
+    :initvals '((((0 1) (2 3)) ((4 5 6) (7 8 (9)))) (1 1 2))
+    :indoc '("list" "list")
+    :icon 000
+    :doc "Computes a k-dimensional tree"
+    (setq out nil)
+    (if (eq 1 (depth path))
+        (progn 
+            (loop for p in path do
+                (setq data (nth p data)))
+        data)
+        (mapcar #'(lambda (input) (deep-nth data input)) path)))
+
+;--------------- KNN ---------------
+(defmethod! KNN ((data list) (k integer) (tree-nodes list) (kd-tree list) &optional (weights nil))
+    :initvals '((0.5 0.2) 1 (0 1) ((((-2 -2)) ((-1 1))) (((0 0)) ((2 2) (1 1)))) nil)
+    :indoc '("list" "integer" "list" "list" "list")
+    :icon 000
+    :doc "Finds the K-nearest neighbors within a given KDTree."
+    (if (equal (depth data) 1)
+        (progn
+            (setq branch nil)
+            (loop for n in tree-nodes and i from 0 to (- (length tree-nodes) 1) do
+                (setq val (nth i data))
+                (if (< val n)
+                    (setq pos 0)
+                    (setq pos 1))
+                (setq branch (append branch (list pos))))
+            (setq neighbors (deep-nth kd-tree branch))
+            (setq out (first-n (NNS data neighbors weights) k))
+            (if (eq k 1)
+                (setq out (car out)))
+            out)
+        (mapcar #'(lambda (input) (KNN input k tree-nodes kd-tree)) data)))
+
 #| 
     TODO:
-        - KDTree
         - Granulate
         - PCA
  |#

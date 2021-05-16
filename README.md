@@ -21,6 +21,8 @@ OM-Data
 │   ├── DTW
 │   ├── DTW-align
 │   ├── Optimal Sorting
+│   ├── KDTree
+│   ├── KNN
 │   ├── Markov-build
 │   └── Markov-run
 │
@@ -42,6 +44,8 @@ OM-Data
 │   ├── N-occurances
 │   ├── Unique-seq
 │   ├── Unique-scramble
+│   ├── Deep-replace
+│   ├── Deep-nth
 │   ├── List-frames
 │   └── Histogram
 │
@@ -57,6 +61,7 @@ OM-Data
 │
 ├── 5-Rhythm
 │   ├── Rhythmicon
+│   ├── Risset-rhythm
 │   └── Euclidean-rhythm
 │
 ├── 6-Score
@@ -67,7 +72,6 @@ OM-Data
 │
 └── 7-Other
     ├── L-system
-    ├── 1D-Turtle
     └── 2D-Turtle
 
  ```

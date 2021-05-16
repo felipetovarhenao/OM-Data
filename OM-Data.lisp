@@ -16,6 +16,8 @@
             K-means
             DTW
             DTW-align
+            KDTree
+            KNN
             Optimal-sorting
             Markov-build
             Markov-run
@@ -23,6 +25,8 @@
         ("2-Metrics" nil nil (
             Euclidean-distance
             List-moments
+            List-median
+            List-mode
             List-Zscore
             ) nil)
         ("3-List processing" nil nil (
@@ -39,6 +43,8 @@
             Unique-seq
             Unique-scramble
             List-frames
+            Deep-nth
+            Deep-replace
             Histogram
             ) nil)
         ("4-Midicents" nil nil (
@@ -64,7 +70,6 @@
             ) nil)
         ("7-Other" nil nil (
             L-system
-            1D-Turtle
             2D-Turtle
             ) nil)
     )
