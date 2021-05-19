@@ -1674,7 +1674,8 @@
         (setq out (make-instance '3dc-lib :bpf-list bp-list)))
     out)
 
-;
+;--------------- Neo-Riemannian Transformations ---------------
+
 (defun triad-posn (mc)
     (setq pc-set (nth-value 1 (om// mc 1200)))
     (setq pc-set (om- pc-set (list-min pc-set)))
@@ -1742,18 +1743,6 @@
         (setq out (posn-match (list 0 0 100) posn)))
     out)
 
-;--------------- Plot-points ---------------
-(defmethod! NRT ((mc list) (transformations list))
-    :initvals '((6000 5500 7600 7200) '(r l (l p) ))
-    :indoc '("list" "list")
-    :icon 000
-    :doc "Performs Neo-riemannian transformations on a starting triadic chord"
-    (if (eq (depth mc) 1)
-        (loop for tr in transformations collect
-            (setq mc (apply-nrt mc tr))
-        )
-        (mapcar #'(lambda (input) (apply-nrt input transformations)) mc)))
-
 (defun apply-nrt (mc nrt-list)
     (setq triad (copy-tree mc))
     (if (atom nrt-list)
@@ -1773,6 +1762,17 @@
                 (equal tr 'l)
                 (setq triad (om+ triad (l-nrt triad-type posn))))))
     triad)
+
+(defmethod! NRT ((mc list) (transformations list))
+    :initvals '((6000 5500 7600 7200) '(r l (l p) ))
+    :indoc '("list" "list")
+    :icon 000
+    :doc "Performs Neo-riemannian transformations on a starting triadic chord"
+    (if (eq (depth mc) 1)
+        (loop for tr in transformations collect
+            (setq mc (apply-nrt mc tr))
+        )
+        (mapcar #'(lambda (input) (apply-nrt input transformations)) mc)))
 
 #| 
     TODO:
