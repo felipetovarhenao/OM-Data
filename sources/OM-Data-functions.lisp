@@ -1243,7 +1243,7 @@
         (setq weights (cdr (nth row-index matrix)))
         (if (> (reduce-tree weights #'+) 0)
             (progn 
-                (setq choice (car (pick-random states weightss 1)))
+                (setq choice (car (pick-random states weights 1)))
                 (setq current-state choice))
             (if (equal mode '0)
                 (progn
@@ -1675,7 +1675,6 @@
     out)
 
 ;--------------- Neo-Riemannian Transformations ---------------
-
 (defun triad-posn (mc)
     (setq pc-set (nth-value 1 (om// mc 1200)))
     (setq pc-set (om- pc-set (list-min pc-set)))
@@ -1770,8 +1769,7 @@
     :doc "Performs Neo-riemannian transformations on a starting triadic chord"
     (if (eq (depth mc) 1)
         (loop for tr in transformations collect
-            (setq mc (apply-nrt mc tr))
-        )
+            (setq mc (apply-nrt mc tr)))
         (mapcar #'(lambda (input) (apply-nrt input transformations)) mc)))
 
 #| 
