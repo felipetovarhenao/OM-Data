@@ -28,6 +28,10 @@
             List-median
             List-mode
             List-Zscore
+            List-covariance
+            List-correlation
+            Histogram
+            Plot-points
             ) nil)
         ("3-List processing" nil nil (
             X-interpolation
@@ -45,9 +49,9 @@
             List-frames
             Deep-nth
             Deep-replace
-            Histogram
             ) nil)
         ("4-Midicents" nil nil (
+            NRT
             Distortion
             Fill-range
             Shift-posn
@@ -76,10 +80,8 @@
 )
 
 (print "
-    ***************************
-        OM-Data successfully loaded!
-
-       [www.felipe-tovar-henao.com]
-                        2021
-    ***************************
+***************************
+OM-Data library - 2021
+[www.felipe-tovar-henao.com]
+***************************
 ")

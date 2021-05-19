@@ -208,7 +208,7 @@
 
 (defmethod! Euclidean-distance ((a number) (b-list list) (weights list))
     (loop for b in b-list collect (abs (- b a))))
-
+#| 
 ; --------------- NNS ---------------
 (defmethod! NNS ((main-list list) (other-lists list) (weights list))
     :initvals '((0 1 2 3) ((1 2 3 4) (0 0 2 3) (2 3 4 5)) nil)
@@ -232,12 +232,42 @@
     (setq distances (loop for b in list-b collect (list b (Euclidean-distance a b nil))))
     (stable-sort distances #'< :key #'second)
     (car (mat-trans distances)))
+ |#
+
+; --------------- NNS ---------------
+(defmethod! NNS ((main-list list) (other-lists list) (weights list))
+    :initvals '((0 0) ((1 1) (-1 1) (0 -1) (1 0) (2 1) (-1 -2)) nil)
+    :indoc '("list" "list of lists" "list (optional)")
+    :icon 000
+    :numouts 2
+    :doc "Sorts the lists based on the exhaustive nearest neighbor seach algorithm, using Euclidean distance as the sorting measurement.
+    
+    NOTE: All lists must have the same length.
+    Example:  
+    (NNS '(0 1 2 3) '((1 2 3 4) (0 0 2 3) (2 3 4 5)) nil) => ((0 0 2 3) (1 2 3 4) (2 3 4 5))
+    "
+    (setq nns-list nil) 
+    (setq positions nil)
+    (setq distances 
+        (loop for l in other-lists and p from 0 to (- (length other-lists) 1) collect 
+            (list l p (Euclidean-distance main-list l weights))))
+    (stable-sort distances #'< :key #'third)
+    (setq distances (mat-trans distances))
+    (values-list (list (car distances) (second distances)))
+)
+
+; (defmethod! NNS ((a number) (list-b list) (weights list))
+;     (setq distances (loop for b in list-b collect (list b (Euclidean-distance a b nil))))
+;     (stable-sort distances #'< :key #'second)
+;     (car (mat-trans distances)))
+
 
 ; --------------- Optimal-sorting ---------------
 (defmethod! Optimal-sorting ((st-list list) (other-lists list) (weights list))
     :initvals '((0 0 0 2) ((0 1 2 3) (2 3 4 5) (1 2 3 4)) nil)
     :indoc '("list (initial)" "list of lists" "list (optional)")
     :icon 000
+    :numouts 2
     :doc "Sorts a list of lists such that the distance between adjacent lists is optimally minimized, given a starting list.
     
     NOTE: All lists must have the same length.
@@ -245,13 +275,15 @@
     Example:
     (optimal-sorting '(0 0 0 2) '((0 1 2 3) (2 3 4 5) (1 2 3 4)) nil) => ((0 0 0 2) (0 1 2 3) (1 2 3 4) (2 3 4 5))
     "  
-    (setq neighbors (NNS st-list other-lists weights))
+    (setq neighbors (nth-value 0 (NNS st-list other-lists weights)))
     (setq remaining (copy-tree neighbors))
     (setq output nil)
     (loop for n in neighbors do
         (setq output (append output (list (car remaining))))
-        (setq remaining (NNS (car remaining) (cdr remaining) weights)))
-    (append (list st-list) output))
+        (setq remaining (nth-value 0 (NNS (car remaining) (cdr remaining) weights))))
+    (setq positions (nested-position output other-lists))
+    (setq output (append (list st-list) output))
+    (values-list (list output positions)))
 
 ; --------------- List-quantize ---------------
 (defmethod! List-quantize ((a number) (b-list list) (accuracy number))
@@ -387,6 +419,7 @@
     (if (eq (depth data) 1)
         (if (> (length data) 1)
             (progn 
+                (setq skewness nil) (setq kurtosis nil)
                 (setq mean (/ (reduce #'+ data) (* 1.0 (length data))))
                 (setq st-dev (sqrt 
                     (/ (reduce #'+ 
@@ -458,7 +491,7 @@
             (setq rand (- rand w))
             (setq index (+ index 1))))
     out)
-
+#| 
 ;--------------- K-means ---------------
 (defmethod! K-means ((data list) (k integer) (weights list))
     :initvals '(((0 1 0) (-3 -1 2) (4 0 9) (-3 -5 -1) (0 4 -3) (2 1 -4)) 2 nil)
@@ -519,6 +552,69 @@
     (loop for ld in labeled-data do
         (setf (nth (second ld) output) (append (nth (second ld) output) (list (first ld)))))
     output)
+ |#
+
+;--------------- K-means ---------------
+(defmethod! K-means ((data list) (k integer) (weights list))
+    :initvals '(((0 1 0) (-3 -1 2) (4 0 9) (-3 -5 -1) (0 4 -3) (2 1 -4)) 2 nil)
+    :indoc '("list" "k (integer)" "weights (optional)")
+    :icon 000
+    :numouts 2
+    :doc "Unsupervised data clustering algorithm.
+    
+    NOTE: All data items must have the same size. Weights are optional.
+    
+    Example:
+    (k-means '((0 1 0) (-3 -1 2) (4 0 9) (-3 -5 -1) (0 4 -3) (2 1 -4)) 2 nil) => (((0 1 0) (-3 -1 2) (-3 -5 -1) (0 4 -3) (2 1 -4)) ((4 0 9)))
+    " 
+    
+    ; clip k to suitable range
+    (setq k (clip k 1 (- (length data) 1))) 
+
+    ; copy data and add label slots
+    (setq labeled-data 
+        (loop for d in data collect (list d nil)))
+
+    ; initialize k-centroids and sort by first element
+    (setq k-centroids (k-smart data k))
+    (stable-sort k-centroids #'< :key #'first)
+
+    ; convergence flag for loop
+    (setq convergence-flag nil)
+
+    ; ----- K_MEANS routine ----
+    (while (eq convergence-flag nil)
+
+        ; keep a history of last k-centroids
+        (setq pk-centroids (copy-tree k-centroids))
+        ; assign a k-centroid to each data item based on proximity
+        (loop for ld in labeled-data and ld-pos from 0 to (length labeled-data) do
+            (setq nearest-k (car (nth-value 0 (NNS (car ld) k-centroids weights))))
+            (setq ck (position nearest-k k-centroids :test 'equal))
+            (setf (nth ld-pos labeled-data) (list (car ld) ck)))
+        
+        ; update k-centroids 
+        (setq t-labeled-data (mat-trans labeled-data))
+        (loop for ck from 0 to (- k 1) do
+            (setq current-k nil)
+            (loop for ld in labeled-data do
+                (if (eq ck (second ld))
+                    (setq current-k (append current-k (list (first ld))))))
+            (setq current-k (mat-trans current-k))
+            (if (not (equal current-k nil))
+                (progn 
+                    (setq new-centroid (flat (List-moments current-k (list 0))))
+                    (setf (nth ck k-centroids) new-centroid))))
+
+        ; stop loop if centroids do not change
+        (setq convergence-flag (equal k-centroids pk-centroids)))
+
+    ; group data by classes
+    (stable-sort labeled-data #'< :key #'second)
+    (setq output (loop for n from 0 to (- k 1) collect nil))
+    (loop for ld in labeled-data do
+        (setf (nth (second ld) output) (append (nth (second ld) output) (list (first ld)))))
+    (values-list (list output (nested-position output data))))
 
 ;--------------- X-interpolation ---------------
 (defmethod! X-interpolation ((a-list list) (b-list list) (traj list))
@@ -1175,8 +1271,7 @@
             (if (and (>= d lower) (< d upper))
                 (setq counter (+ counter 1))))
         (setq histo (append histo (list (om-make-point lower counter)))))
-    (make-instance 'bpf :point-list histo))
-
+    (make-instance 'bpf :point-list histo :decimal 2))
 
 ;--------------- Multi-join---------------
 (defmethod! Multi-join ((seqs list) &optional (mode '0) (concat-offset nil))
@@ -1524,11 +1619,160 @@
                     (setq pos 1))
                 (setq branch (append branch (list pos))))
             (setq neighbors (deep-nth kd-tree branch))
-            (setq out (first-n (NNS data neighbors weights) k))
+            (setq out (first-n (nth-value 0 (NNS data neighbors weights)) k))
             (if (eq k 1)
                 (setq out (car out)))
             out)
         (mapcar #'(lambda (input) (KNN input k tree-nodes kd-tree)) data)))
+
+;--------------- List-covariance ---------------
+(defmethod! List-covariance ((data list))
+    :initvals '(((-2 2) (0 0) (1 -1) (-1 1) (-4 3) (-3 4)))
+    :indoc '("list")
+    :icon 000
+    :doc "Computes the covariance of a given set of data points"
+    (setq means (flat (list-moments (mat-trans data) '(0))))
+    (setq out
+        (reduce #'+
+            (loop for d in data collect
+                (reduce #'* 
+                    (loop for x in d and m in means collect
+                        (- x m))))))
+    (/ out (- (length data) 1)))
+
+;--------------- List-correlation ---------------
+(defmethod! List-correlation ((data list))
+    :initvals '(((-2 2) (0 0) (1 -1) (-1 1) (-4 3) (-3 4)))
+    :indoc '("list")
+    :icon 000
+    :doc "Computes the correlation of a given set of data points"
+    (setq trans-data (mat-trans data))
+    (setq variances (loop for td in trans-data collect
+        (sqrt (List-covariance (mat-trans (list td td))))))
+    (/ (List-covariance data) (reduce #'* variances)))
+
+;--------------- Plot-points ---------------
+(defmethod! Plot-points ((points list))
+    :initvals '(((-2 2) (0 0) (1 -1) (-1 1) (-4 3) (-3 4)))
+    :indoc '("list")
+    :icon 000
+    :doc "Plots a list of data points in a bpc-lib or 3dc-lib, depending on the dimensionality of the data."
+    (setq bp-list nil)
+    (setq dims (length (mat-trans points)))
+    (loop for p in points do
+        (if (equal dims 2)
+            (progn 
+                (setq omp (repeat-n (om-make-point (first p) (second p)) 2))
+                (setq bp-list (append bp-list (list (make-instance 'bpc :point-list omp :decimals 2))))))
+        (if (equal dims 3)
+            (progn
+                (setq omp (repeat-n (make-3dpoint :x (first p) :y (second p) :z (third p)) 2))
+                (setq bp-list (append bp-list (list (make-instance '3dc :point-list omp :decimals 2)))))))
+    (if (equal dims 2)
+        (setq out (make-instance 'bpc-lib :bpf-list bp-list)))
+    (if (equal dims 3)
+        (setq out (make-instance '3dc-lib :bpf-list bp-list)))
+    out)
+
+;
+(defun triad-posn (mc)
+    (setq pc-set (nth-value 1 (om// mc 1200)))
+    (setq pc-set (om- pc-set (list-min pc-set)))
+
+    (setq maj0 (list 0 400 700))
+    (setq maj1 (list 800 0 300))
+    (setq maj2 (list 500 900 0))
+
+    (setq min0 (list 0 300 700))
+    (setq min1 (list 900 0 400))
+    (setq min2 (list 500 800 0))
+
+    (setq maj0-diff (x-diff pc-set maj0))
+    (setq maj1-diff (x-diff pc-set maj1))
+    (setq maj2-diff (x-diff pc-set maj2))
+
+    (setq min0-diff (x-diff pc-set min0))
+    (setq min1-diff (x-diff pc-set min1))
+    (setq min2-diff (x-diff pc-set min2))
+
+    (setq major-diff (list maj0-diff maj1-diff maj2-diff))
+    (setq minor-diff (list min0-diff min1-diff min2-diff))
+
+    (setq maj-triads (list maj0 maj1 maj2))
+    (setq min-triads (list min0 min1 min2))
+
+    (setq diff-list (list major-diff minor-diff))
+    (setq triad-list (list maj-triads min-triads))
+
+    (setq triad-type nil)
+    (setq out nil)
+
+    (loop for diffs in diff-list and tt from 0 to 1 and triads in triad-list do
+        (loop for d in diffs and tri in triads do
+            (if (equal d nil)
+                (progn 
+                    (setq triad-type tt)
+                    (loop for pc in pc-set do
+                        (loop for n in tri and x from 0 to 2 do
+                            (if (equal pc n)
+                                (setq out (append out (list x))))))))))
+    (list triad-type out))
+
+(defun p-nrt (tri-type posn)
+    (setq out nil)
+    (if (eq tri-type 0)
+        (setq out (posn-match (list 0 -100 0) posn)))
+    (if (eq tri-type 1)
+        (setq out (posn-match (list 0 100 0) posn)))
+    out)
+
+(defun r-nrt (tri-type posn)
+    (setq out nil)
+    (if (eq tri-type 0)
+        (setq out (posn-match (list 0 0 200) posn)))
+    (if (eq tri-type 1)
+        (setq out (posn-match (list -200 0 0) posn)))
+    out)
+
+(defun l-nrt (tri-type posn)
+    (setq out nil)
+    (if (eq tri-type 0)
+        (setq out (posn-match (list -100 0 0) posn)))
+    (if (eq tri-type 1)
+        (setq out (posn-match (list 0 0 100) posn)))
+    out)
+
+;--------------- Plot-points ---------------
+(defmethod! NRT ((mc list) (transformations list))
+    :initvals '((6000 5500 7600 7200) '(r l (l p) ))
+    :indoc '("list" "list")
+    :icon 000
+    :doc "Performs Neo-riemannian transformations on a starting triadic chord"
+    (if (eq (depth mc) 1)
+        (loop for tr in transformations collect
+            (setq mc (apply-nrt mc tr))
+        )
+        (mapcar #'(lambda (input) (apply-nrt input transformations)) mc)))
+
+(defun apply-nrt (mc nrt-list)
+    (setq triad (copy-tree mc))
+    (if (atom nrt-list)
+        (setq nrt-list (list nrt-list)))
+    (loop for tr in nrt-list do
+        (setq label (triad-posn triad))
+        (setq triad-type (first label))
+        (setq posn (second label))
+        (cond 
+            (
+                (equal tr 'p)
+                (setq triad (om+ triad (p-nrt triad-type posn))))  
+            (
+                (equal tr 'r)
+                (setq triad (om+ triad (r-nrt triad-type posn))))  
+            (
+                (equal tr 'l)
+                (setq triad (om+ triad (l-nrt triad-type posn))))))
+    triad)
 
 #| 
     TODO:
