@@ -1033,10 +1033,11 @@
     (rotate (cdr (append out (list val))) rotation))
 
 ;--------------- Rhythmicon ---------------
-(defmethod! Rhythmicon ((base-dur number) (subdivisions list) (times integer))
-    :initvals '(3000 '(1 2 3 4 5 6 7) 4)
-    :indoc '("number" "list" "integer")
+(defmethod! Rhythmicon ((base-dur number) (subdivisions list) (times integer) mode)
+    :initvals '(3000 '(1 2 3 4 5 6 7) 4 'divisive)
+    :indoc '("number" "list" "integer" "menu")
     :icon 000
+    :menuins '((3 (("divisive" 'divisive) ("multiplicative" 'multiplicative))))
     :doc "Outputs a rhythmicon as a MULTI-SEQ, given a fundamental duration (ms), a list of subdivisions, and a number of repetitions. For each rhythmic partial, the corresponding pitch is automatically assigned, using 3300 as the fundamental.
     "
     (setq onsets nil)
@@ -1056,7 +1057,11 @@
         (setq pitches (append pitches (list (repeat-n (f->mc (* f0 m)) (* times (floor m))))))
         (setq velocities (append velocities (list (repeat-n v numnotes)))))
     (make-instance 'multi-seq :chord-seqs (reverse (loop for o in onsets and p in pitches and d in durations and v in velocities collect 
-        (make-instance 'chord-seq :lmidic p :lonset o :ldur d :lvel v)))))
+        (make-instance 'chord-seq 
+            :lmidic p 
+            :lonset o 
+            :ldur d 
+            :lvel v)))))
 
 ;--------------- Extract-channel ---------------
 (defmethod! Extract-channel ((self chord-seq) (midi-chan integer))
@@ -1771,6 +1776,79 @@
         (loop for tr in transformations collect
             (setq mc (apply-nrt mc tr)))
         (mapcar #'(lambda (input) (apply-nrt input transformations)) mc)))
+
+;--------------- Make-sieve ---------------
+(defmethod! Make-sieve ((list list) (reps integer) sieve-mode sieve-type &optional (start '0))
+    :initvals '((2 3) 1 'union 'nil 0)
+    :indoc '("list" "integer" "menu" "menu" "number")
+    :menuins '(
+        (2 (("union" 'union) ("diff" 'diff)))
+        (3 (("nil" 'nil) ("complement" 'complement))))
+    :icon 000
+    :doc "Sieves"
+    (setq list (remove 0 list))
+    (setq period (+ start (* reps (list-lcm list))))
+    (setq sieves (loop for l in list collect
+        (arithm-ser start period l)))
+    (cond
+        (
+            (equal sieve-mode 'union)
+            (setq out (list-union sieves)))
+        (
+            (equal sieve-mode 'diff)
+            (setq out (list-diff sieves))))
+    (if (equal sieve-type 'complement)
+        (setq out (list-diff (list (arithm-ser start period 1) (flat (list out))))))
+    (stable-sort out #'<))
+
+(defun list-union (list)
+    (setq out (car list))
+    (loop for l in (cdr list) do
+        (setq out (x-union out l)))
+    out)
+
+(defun list-intersect (list)
+    (setq out (car list))
+    (loop for l in (cdr list) do
+        (setq out (x-intersect out l)))
+    out)
+
+(defun list-diff (list)
+    (setq out (car list))
+    (loop for l in (cdr list) do
+        (setq out (x-diff out l)))
+    out)
+
+(defun list-lcm (list)
+    (setq out (car list))
+    (loop for l in (cdr list) do
+        (setq out (lcm out l)))
+    out)
+
+(defun list-gcd (list)
+    (setq out (car list))
+    (loop for l in (cdr list) do
+        (setq out (gcd out l)))
+    out)
+
+;--------------- Vieru-sequence ---------------
+(defun vieru-seq (seq mod-n times)
+    (setq seq (nth-value 1 (om// (append seq (list (car seq))) mod-n)))
+    (setq out nil)
+    (loop for x from 1 to times do
+        (setq diff-seq nil)
+        (loop for i from 0 to (- (length seq) 2) do
+            (setq current (nth i seq))
+            (setq next (nth (+ i 1) seq))
+            (if (>= next current)
+                (setq val (abs (- next current)))
+                (setq val (abs (- (+ next mod-n) current)))
+            )
+            (setq diff-seq (append diff-seq (list val)))
+        )
+        (setq seq (append diff-seq (list (car diff-seq))))
+        (setq out (append out (list seq))))
+    out)
 
 #| 
     TODO:
