@@ -1031,7 +1031,7 @@
                 (setq out (append out (list val)))
                 (setq val 1))))
     (rotate (cdr (append out (list val))) rotation))
-
+#| 
 ;--------------- Rhythmicon ---------------
 (defmethod! Rhythmicon ((base-dur number) (subdivisions list) (times integer) mode)
     :initvals '(3000 '(1 2 3 4 5 6 7) 4 'divisive)
@@ -1056,6 +1056,52 @@
         (setq durations (append durations (list (x->dx pre-onsets))))
         (setq pitches (append pitches (list (repeat-n (f->mc (* f0 m)) (* times (floor m))))))
         (setq velocities (append velocities (list (repeat-n v numnotes)))))
+    (make-instance 'multi-seq :chord-seqs (reverse (loop for o in onsets and p in pitches and d in durations and v in velocities collect 
+        (make-instance 'chord-seq 
+            :lmidic p 
+            :lonset o 
+            :ldur d 
+            :lvel v)))))
+ |#
+;--------------- Rhythmicon ---------------
+(defmethod! Rhythmicon ((base-dur number) (subdivisions list) (times integer) mode)
+    :initvals '(3000 '(1 2 3 4 5 6 7) 4 'divisive)
+    :indoc '("number" "list" "integer" "menu")
+    :icon 000
+    :menuins '((3 (("div" 'div) ("mult" 'mult))))
+    :doc "Outputs a rhythmicon as a MULTI-SEQ, given a fundamental duration (ms), a list of subdivisions, and a number of repetitions. For each rhythmic partial, the corresponding pitch is automatically assigned, using 3300 as the fundamental.
+    "
+    (setq onsets nil)
+    (setq pitches nil)
+    (setq durations nil)
+    (setq vels (om-scale subdivisions 120 30))
+    (setq f0 (mc->f 3300))
+    (setq output nil)
+    (setq velocities nil)
+    (setq max-onset (* base-dur times))
+    (setq period (list-lcm subdivisions))
+    (loop for m in subdivisions and v in vels do
+        (cond
+            (
+                (equal mode 'div)
+                (progn
+                    (setq numnotes (nth-value 0 (ceiling (* m times))))
+                    (setq durs (repeat-n (/ base-dur m) numnotes))
+                    (setq pre-onsets (om-clip (dx->x 0 durs) 0 max-onset))
+                    (setq onsets (append onsets (list pre-onsets)))
+                    (setq durations (append durations (list (x->dx pre-onsets))))
+                    (setq pitches (append pitches (list (repeat-n (f->mc (* f0 m)) numnotes))))
+                    (setq velocities (append velocities (list (repeat-n v numnotes))))))
+            (
+                (equal mode 'mult)
+                (progn
+                    (setq numnotes (* (/ period m) times))
+                    (setq durs (repeat-n (* base-dur m) numnotes))
+                    (setq pre-onsets (dx->x 0 durs))
+                    (setq onsets (append onsets (list pre-onsets)))
+                    (setq durations (append durations (list (x->dx pre-onsets))))
+                    (setq pitches (append pitches (list (repeat-n (f->mc (* f0 m)) numnotes))))
+                    (setq velocities (append velocities (list (repeat-n v numnotes))))))))
     (make-instance 'multi-seq :chord-seqs (reverse (loop for o in onsets and p in pitches and d in durations and v in velocities collect 
         (make-instance 'chord-seq 
             :lmidic p 
@@ -1868,9 +1914,7 @@
     (if (> tolerance 0.0)
         (progn 
             (setq sorted-list (sort-list in-list))
-            (setq maxdist (reduce-tree (om-abs (om- sorted-list (reverse sorted-list))) #'+))
-        )
-    )
+            (setq maxdist (reduce-tree (om-abs (om- sorted-list (reverse sorted-list))) #'+))))
     (cond 
         (
             (equal mode 'rotations)
