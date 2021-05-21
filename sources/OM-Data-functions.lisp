@@ -355,7 +355,7 @@
     Example:
     (fill-range '(3600 5200 6700 7000) 6000 7200) => (6000 6400 6700 7000 7200)
     " 
-    (setq chord-list (remove-dup (List-mod chord-list 1200) #'eq 1))
+    (setq chord-list (remove-dup (List-mod chord-list 1200) 'equal 1))
     (setq base-chord (copy-tree chord-list))
     (setq o 0)
     (setq offset (* 1200 (values (floor (/ lower-bound 1200)))))
@@ -1778,7 +1778,7 @@
         (mapcar #'(lambda (input) (apply-nrt input transformations)) mc)))
 
 ;--------------- Make-sieve ---------------
-(defmethod! Make-sieve ((list list) (reps integer) sieve-mode sieve-type &optional (start '0))
+(defmethod! Make-sieve ((list list) (reps integer) sieve-mode sieve-type &optional (offset '0))
     :initvals '((2 3) 1 'union 'nil 0)
     :indoc '("list" "integer" "menu" "menu" "number")
     :menuins '(
@@ -1787,9 +1787,9 @@
     :icon 000
     :doc "Sieves"
     (setq list (remove 0 list))
-    (setq period (+ start (* reps (list-lcm list))))
+    (setq period (+ offset (* reps (list-lcm list))))
     (setq sieves (loop for l in list collect
-        (arithm-ser start period l)))
+        (arithm-ser offset period l)))
     (cond
         (
             (equal sieve-mode 'union)
@@ -1798,7 +1798,7 @@
             (equal sieve-mode 'diff)
             (setq out (list-diff sieves))))
     (if (equal sieve-type 'complement)
-        (setq out (list-diff (list (arithm-ser start period 1) (flat (list out))))))
+        (setq out (list-diff (list (arithm-ser offset period 1) (flat (list out))))))
     (stable-sort out #'<))
 
 (defun list-union (list)
@@ -1832,10 +1832,15 @@
     out)
 
 ;--------------- Vieru-sequence ---------------
-(defun vieru-seq (seq mod-n times)
+(defmethod! Vieru-seq ((seq list) (n-tiers integer))
+    :initvals '((4 1 2 1 4) 12 1)
+    :indoc '("list" "integer" "integer")
+    :icon 000
+    :doc "Vieru-seq"
+    (setq mod-n (reduce #'+ seq))
     (setq seq (nth-value 1 (om// (append seq (list (car seq))) mod-n)))
     (setq out nil)
-    (loop for x from 1 to times do
+    (loop for x from 1 to n-tiers do
         (setq diff-seq nil)
         (loop for i from 0 to (- (length seq) 2) do
             (setq current (nth i seq))
@@ -1846,9 +1851,47 @@
             )
             (setq diff-seq (append diff-seq (list val)))
         )
+        (setq out (append out (list diff-seq)))
         (setq seq (append diff-seq (list (car diff-seq))))
-        (setq out (append out (list seq))))
+    )
     out)
+
+;--------------- List-symmetries ---------------
+(defmethod! List-symmetries ((in-list list) mode &optional (tolerance 0.0))
+    :initvals '((3 1 1 3 2 1 1 2) 'rotations 0.0)
+    :indoc '("list" "menu" "number")
+    :outdoc '("found symmetries" "assymmetry factor")
+    :menuins '((1 (("permutations" 'permutations) ("rotations" 'rotations))))
+    :icon 000
+    :numouts 2
+    :doc "Symmetric permutations"
+    (if (> tolerance 0.0)
+        (progn 
+            (setq sorted-list (sort-list in-list))
+            (setq maxdist (reduce-tree (om-abs (om- sorted-list (reverse sorted-list))) #'+))
+        )
+    )
+    (cond 
+        (
+            (equal mode 'rotations)
+            (setq forms (loop for n from 0 to (- (length in-list) 1) collect (rotate in-list n))))
+        (
+            (equal mode 'permutations)
+            (setq forms (remove-dup (permutations in-list) 'equal 1))))
+    (setq out nil)
+    (loop for f in forms do
+        (setq rf (reverse f))
+        (if (> tolerance 0.0)
+            (progn 
+                (setq dist (/ (reduce-tree (om-abs (om- rf f))  #'+) maxdist))
+                (if (<= dist tolerance)
+                    (setq out (append out (list (list f dist))))))
+            (if (equal f rf)
+                (setq out (append out (list (list f 0)))))))
+    (stable-sort out #'< :key 'second)
+    (setq out (mat-trans out))
+    (values-list (list (first out) (second out))))
+
 
 #| 
     TODO:
