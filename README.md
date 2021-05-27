@@ -29,27 +29,34 @@ OM-Data
 ├── 2-Metrics
 │   ├── Euclidean-distance
 │   ├── List-moments
-│   └── List-Zscore
+│   ├── List-median
+│   ├── List-mode
+│   ├── List-Zscore
+│   ├── List-covariance
+│   ├── List-correlation
+│   ├── List-Histogram
+│   └── Plot-points
 │
 ├── 3-List-processing
 │   ├── X-interpolation
-│   ├── List-quantize
-│   ├── List-mod
 │   ├── Posn-map
 │   ├── Pick-random
 │   ├── List-wrap
 │   ├── List-fold
+│   ├── List-symmetries
+│   ├── List-frames
+│   ├── List-quantize
+│   ├── List-mod
 │   ├── Nested-position
 │   ├── Nested-nth
-│   ├── N-occurances
-│   ├── Unique-seq
-│   ├── Unique-scramble
 │   ├── Deep-replace
 │   ├── Deep-nth
-│   ├── List-frames
-│   └── Histogram
+│   ├── N-occurances
+│   ├── Unique-seq
+│   └── Unique-scramble
 │
 ├── 4-Midicents
+│   ├── NRT
 │   ├── Distortion
 │   ├── Fill-range
 │   ├── Shift-posn
@@ -72,6 +79,8 @@ OM-Data
 │
 └── 7-Other
     ├── L-system
+    ├── 2D-Turtle
+    ├── Make-sieve
     └── 2D-Turtle
 
  ```
