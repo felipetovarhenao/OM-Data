@@ -208,31 +208,6 @@
 
 (defmethod! Euclidean-distance ((a number) (b-list list) (weights list))
     (loop for b in b-list collect (abs (- b a))))
-#| 
-; --------------- NNS ---------------
-(defmethod! NNS ((main-list list) (other-lists list) (weights list))
-    :initvals '((0 1 2 3) ((1 2 3 4) (0 0 2 3) (2 3 4 5)) nil)
-    :indoc '("list" "list of lists" "list (optional)")
-    :icon 000
-    :doc "Sorts the lists based on the exhaustive nearest neighbor seach algorithm, using Euclidean distance as the sorting measurement.
-    
-    NOTE: All lists must have the same length.
-    Example:  
-    (NNS '(0 1 2 3) '((1 2 3 4) (0 0 2 3) (2 3 4 5)) nil) => ((0 0 2 3) (1 2 3 4) (2 3 4 5))
-    "
-    (setq nns-list nil) 
-    (setq positions nil)
-    (setq distances 
-        (loop for l in other-lists collect 
-            (list l (Euclidean-distance main-list l weights))))
-    (stable-sort distances #'< :key #'second)
-    (car (mat-trans distances)))
-
-(defmethod! NNS ((a number) (list-b list) (weights list))
-    (setq distances (loop for b in list-b collect (list b (Euclidean-distance a b nil))))
-    (stable-sort distances #'< :key #'second)
-    (car (mat-trans distances)))
- |#
 
 ; --------------- NNS ---------------
 (defmethod! NNS ((main-list list) (other-lists list) (weights list))
@@ -253,14 +228,11 @@
             (list l p (Euclidean-distance main-list l weights))))
     (stable-sort distances #'< :key #'third)
     (setq distances (mat-trans distances))
-    (values-list (list (car distances) (second distances)))
-)
+    (values-list (list (first distances) (second distances))))
 
-; (defmethod! NNS ((a number) (list-b list) (weights list))
-;     (setq distances (loop for b in list-b collect (list b (Euclidean-distance a b nil))))
-;     (stable-sort distances #'< :key #'second)
-;     (car (mat-trans distances)))
-
+#| (defmethod! NNS ((a number) (list-b list) (weights list))
+    (setq out (NNS (list a) (mat-trans (list list-b)) weights))
+    (values-list (list (flat (nth-value 0 out)) (nth-value 1 out)))) |#
 
 ; --------------- Optimal-sorting ---------------
 (defmethod! Optimal-sorting ((st-list list) (other-lists list) (weights list))
@@ -304,8 +276,7 @@
         (setq distances (append distances (list (abs (- b a))))))
     (setq sorted-distances (copy-tree distances))
     (stable-sort sorted-distances #'<)
-    (+ (* accuracy (nth (nth 0 (get-posn (car sorted-distances) distances)) b-list)) (* a (- 1 accuracy)))
-    )
+    (+ (* accuracy (nth (nth 0 (get-posn (car sorted-distances) distances)) b-list)) (* a (- 1 accuracy))))
 
 (defmethod! List-quantize ((a-list list) (b-list list) (accuracy number))
     (mapcar #'(lambda (input) 
@@ -491,70 +462,8 @@
             (setq rand (- rand w))
             (setq index (+ index 1))))
     out)
-#| 
-;--------------- K-means ---------------
-(defmethod! K-means ((data list) (k integer) (weights list))
-    :initvals '(((0 1 0) (-3 -1 2) (4 0 9) (-3 -5 -1) (0 4 -3) (2 1 -4)) 2 nil)
-    :indoc '("list" "k (integer)" "weights (optional)")
-    :icon 000
-    :doc "Unsupervised data clustering algorithm.
-    
-    NOTE: All data items must have the same size. Weights are optional.
-    
-    Example:
-    (k-means '((0 1 0) (-3 -1 2) (4 0 9) (-3 -5 -1) (0 4 -3) (2 1 -4)) 2 nil) => (((0 1 0) (-3 -1 2) (-3 -5 -1) (0 4 -3) (2 1 -4)) ((4 0 9)))
-    " 
-    
-    ; clip k to suitable range
-    (setq k (clip k 1 (- (length data) 1))) 
 
-    ; copy data and add label slots
-    (setq labeled-data 
-        (loop for d in data collect (list d nil)))
-
-    ; initialize k-centroids and sort by first element
-    (setq k-centroids (k-smart data k))
-    (stable-sort k-centroids #'< :key #'first)
-
-    ; convergence flag for loop
-    (setq convergence-flag nil)
-
-    ; ----- K_MEANS routine ----
-    (while (eq convergence-flag nil)
-
-        ; keep a history of last k-centroids
-        (setq pk-centroids (copy-tree k-centroids))
-        ; assign a k-centroid to each data item based on proximity
-        (loop for ld in labeled-data and ld-pos from 0 to (length labeled-data) do
-            (setq nearest-k (car (NNS (car ld) k-centroids weights)))
-            (setq ck (position nearest-k k-centroids :test 'equal))
-            (setf (nth ld-pos labeled-data) (list (car ld) ck)))
-        
-        ; update k-centroids 
-        (setq t-labeled-data (mat-trans labeled-data))
-        (loop for ck from 0 to (- k 1) do
-            (setq current-k nil)
-            (loop for ld in labeled-data do
-                (if (eq ck (second ld))
-                    (setq current-k (append current-k (list (first ld))))))
-            (setq current-k (mat-trans current-k))
-            (if (not (equal current-k nil))
-                (progn 
-                    (setq new-centroid (flat (List-moments current-k (list 0))))
-                    (setf (nth ck k-centroids) new-centroid))))
-
-        ; stop loop if centroids do not change
-        (setq convergence-flag (equal k-centroids pk-centroids)))
-
-    ; group data by classes
-    (stable-sort labeled-data #'< :key #'second)
-    (setq output (loop for n from 0 to (- k 1) collect nil))
-    (loop for ld in labeled-data do
-        (setf (nth (second ld) output) (append (nth (second ld) output) (list (first ld)))))
-    output)
- |#
-
-;--------------- K-means ---------------
+#| ;--------------- K-means ---------------
 (defmethod! K-means ((data list) (k integer) (weights list))
     :initvals '(((0 1 0) (-3 -1 2) (4 0 9) (-3 -5 -1) (0 4 -3) (2 1 -4)) 2 nil)
     :indoc '("list" "k (integer)" "weights (optional)")
@@ -614,7 +523,71 @@
     (setq output (loop for n from 0 to (- k 1) collect nil))
     (loop for ld in labeled-data do
         (setf (nth (second ld) output) (append (nth (second ld) output) (list (first ld)))))
-    (values-list (list output (nested-position output data))))
+    (values-list (list output (nested-position output data)))) |#
+
+;--------------- K-means ---------------
+(defmethod! K-means ((data list) (k integer) (weights list))
+    :initvals '(((0 1 0) (-3 -1 2) (4 0 9) (-3 -5 -1) (0 4 -3) (2 1 -4)) 2 nil)
+    :indoc '("list" "k (integer)" "weights (optional)")
+    :icon 000
+    :numouts 2
+    :doc "Unsupervised data clustering algorithm.
+    
+    NOTE: All data items must have the same size. Weights are optional.
+    
+    Example:
+    (k-means '((0 1 0) (-3 -1 2) (4 0 9) (-3 -5 -1) (0 4 -3) (2 1 -4)) 2 nil) => (((0 1 0) (-3 -1 2) (-3 -5 -1) (0 4 -3) (2 1 -4)) ((4 0 9)))
+    " 
+    
+    ; clip k to suitable range
+    (setq k (clip k 1 (- (length data) 1))) 
+
+    ; copy data and add label slots
+    (setq labeled-data 
+        (loop for d in data and n from 0 to (- (length data) 1) collect (list d nil n)))
+
+    ; initialize k-centroids and sort by first element
+    (setq k-centroids (k-smart data k))
+    (stable-sort k-centroids #'< :key #'first)
+
+    ; convergence flag for loop
+    (setq convergence-flag nil)
+
+    ; ----- K_MEANS routine ----
+    (while (eq convergence-flag nil)
+
+        ; keep a history of last k-centroids
+        (setq pk-centroids (copy-tree k-centroids))
+        ; assign a k-centroid to each data item based on proximity
+        (loop for ld in labeled-data and ld-pos from 0 to (length labeled-data) do
+            (setq nearest-k (car (nth-value 0 (NNS (car ld) k-centroids weights))))
+            (setq ck (position nearest-k k-centroids :test 'equal))
+            (setf (nth ld-pos labeled-data) (list (car ld) ck (third ld))))
+        
+        ; update k-centroids 
+        (setq t-labeled-data (mat-trans labeled-data))
+        (loop for ck from 0 to (- k 1) do
+            (setq current-k nil)
+            (loop for ld in labeled-data do
+                (if (eq ck (second ld))
+                    (setq current-k (append current-k (list (first ld))))))
+            (setq current-k (mat-trans current-k))
+            (if (not (equal current-k nil))
+                (progn 
+                    (setq new-centroid (flat (List-moments current-k (list 0))))
+                    (setf (nth ck k-centroids) new-centroid))))
+
+        ; stop loop if centroids do not change
+        (setq convergence-flag (equal k-centroids pk-centroids)))
+
+    ; group data by classes
+    (stable-sort labeled-data #'< :key #'second)
+    (setq output (repeat-n nil k))
+    (setq positions (repeat-n nil k))
+    (loop for ld in labeled-data do
+        (setf (nth (second ld) output) (append (nth (second ld) output) (list (first ld))))
+        (setf (nth (second ld) positions) (append (nth (second ld) positions) (list (third ld)))))
+    (values-list (list output positions)))
 
 ;--------------- X-interpolation ---------------
 (defmethod! X-interpolation ((a-list list) (b-list list) (traj list))
@@ -1031,38 +1004,7 @@
                 (setq out (append out (list val)))
                 (setq val 1))))
     (rotate (cdr (append out (list val))) rotation))
-#| 
-;--------------- Rhythmicon ---------------
-(defmethod! Rhythmicon ((base-dur number) (subdivisions list) (times integer) mode)
-    :initvals '(3000 '(1 2 3 4 5 6 7) 4 'divisive)
-    :indoc '("number" "list" "integer" "menu")
-    :icon 000
-    :menuins '((3 (("divisive" 'divisive) ("multiplicative" 'multiplicative))))
-    :doc "Outputs a rhythmicon as a MULTI-SEQ, given a fundamental duration (ms), a list of subdivisions, and a number of repetitions. For each rhythmic partial, the corresponding pitch is automatically assigned, using 3300 as the fundamental.
-    "
-    (setq onsets nil)
-    (setq pitches nil)
-    (setq durations nil)
-    (setq vels (om-scale subdivisions 120 30))
-    (setq f0 (mc->f 3300))
-    (setq output nil)
-    (setq velocities nil)
-    (setq max-onset (* base-dur times))
-    (loop for m in subdivisions and v in vels do
-        (setq numnotes (nth-value 0 (ceiling (* times m))))
-        (setq durs (repeat-n (/ base-dur m) numnotes))
-        (setq pre-onsets (om-clip (dx->x 0 durs) 0 max-onset))
-        (setq onsets (append onsets (list pre-onsets)))
-        (setq durations (append durations (list (x->dx pre-onsets))))
-        (setq pitches (append pitches (list (repeat-n (f->mc (* f0 m)) (* times (floor m))))))
-        (setq velocities (append velocities (list (repeat-n v numnotes)))))
-    (make-instance 'multi-seq :chord-seqs (reverse (loop for o in onsets and p in pitches and d in durations and v in velocities collect 
-        (make-instance 'chord-seq 
-            :lmidic p 
-            :lonset o 
-            :ldur d 
-            :lvel v)))))
- |#
+
 ;--------------- Rhythmicon ---------------
 (defmethod! Rhythmicon ((base-dur number) (subdivisions list) (times integer) mode)
     :initvals '(3000 '(1 2 3 4 5 6 7) 4 'divisive)
@@ -1430,7 +1372,7 @@
     :initvals '(([ f - f ] + f [ f - f ] + f [ f - f ] + f [ f - f ] + f [ f - f ] + f [ f - f ] + f) '((f 1)) '((+ 60) (- -60)) '(([ 1) (] 0)) 0)
     :indoc '("list" "list" "list" "list" "number")
     :icon 000
-    :doc "Turtle"
+    :doc "2D Turtle graphics"
     (setq x 0)
     (setq y 0)
     (setq mag 0)
@@ -1504,7 +1446,7 @@
     :indoc '("chord-seq" "number" "integer" "integer" "menu")
     :icon 000
     :menuins '((4 (("accelerando" '0) ("ritardando" '1))) (5 (("preserve pitch" '0) ("period-wise transp." '1) ("chord-wise transp." '2))))
-    :doc "Risset rhythm"
+    :doc "Risset rhythm."
 
     (setq mc-list (lmidic self))
     (setq onsets (lonset self))
@@ -1645,7 +1587,7 @@
     :initvals '((((0 1) (2 3)) ((4 5 6) (7 8 (9)))) (1 1 2))
     :indoc '("list" "list")
     :icon 000
-    :doc "Computes a k-dimensional tree"
+    :doc "Gets the nth element of a nested list, given a list of positions corresponding to each level in the input list."
     (setq out nil)
     (if (eq 1 (depth path))
         (progn 
@@ -1817,7 +1759,7 @@
     :initvals '((6000 5500 7600 7200) '(r l (l p) ))
     :indoc '("list" "list")
     :icon 000
-    :doc "Performs Neo-riemannian transformations on a starting triadic chord"
+    :doc "Performs Neo-riemannian transformations on a starting triadic chord. The possible transformations are p l and r. Compound transformations are specified as lists of these 3 basic transformations."
     (if (eq (depth mc) 1)
         (loop for tr in transformations collect
             (setq mc (apply-nrt mc tr)))
@@ -1831,7 +1773,7 @@
         (2 (("union" 'union) ("diff" 'diff)))
         (3 (("nil" 'nil) ("complement" 'complement))))
     :icon 000
-    :doc "Sieves"
+    :doc "Builds N full periods of a sieve, based on a list of integers. Make-sieve is meant to be a compact version of OM's native CRIBLE class and functions"
     (setq list (remove 0 list))
     (setq period (+ offset (* reps (list-lcm list))))
     (setq sieves (loop for l in list collect
@@ -1879,10 +1821,15 @@
 
 ;--------------- Vieru-sequence ---------------
 (defmethod! Vieru-seq ((seq list) (n-tiers integer))
-    :initvals '((4 1 2 1 4) 12 1)
+    :initvals '((4 1 2 1 4) 1)
     :indoc '("list" "integer" "integer")
     :icon 000
-    :doc "Vieru-seq"
+    :doc "Takes the ascending modular differences between adjacent values. Based on Anatol Vieru's modal sequences.
+
+    Examples:
+    (vieru-seq '(4 1 2 1 4) 1) => ((9 1 11 3 0))
+    (vieru-seq '(2 1 4 1 2) 3) => ((9 3 7 1 0) (4 4 4 9 9) (0 0 5 0 5))
+    "
     (setq mod-n (reduce #'+ seq))
     (setq seq (nth-value 1 (om// (append seq (list (car seq))) mod-n)))
     (setq out nil)
@@ -1893,13 +1840,10 @@
             (setq next (nth (+ i 1) seq))
             (if (>= next current)
                 (setq val (abs (- next current)))
-                (setq val (abs (- (+ next mod-n) current)))
-            )
-            (setq diff-seq (append diff-seq (list val)))
-        )
+                (setq val (abs (- (+ next mod-n) current))))
+            (setq diff-seq (append diff-seq (list val))))
         (setq out (append out (list diff-seq)))
-        (setq seq (append diff-seq (list (car diff-seq))))
-    )
+        (setq seq (append diff-seq (list (car diff-seq)))))
     out)
 
 ;--------------- List-symmetries ---------------
@@ -1910,7 +1854,11 @@
     :menuins '((1 (("permutations" 'permutations) ("rotations" 'rotations))))
     :icon 000
     :numouts 2
-    :doc "Symmetric permutations"
+    :doc "Searches for symmetric or near-symmetric permutations of a list. The search can be done on all permutations or rotations only
+    
+    Examples:
+    (List-symmetries '(3 1 1 3 2 1 1 2) 'rotations 0.0) => [ ((1 3 2 1 1 2 3 1) (1 2 3 1 1 3 2 1)) (0 0) ]
+    (List-symmetries '(3 2 3 2 1) 'permutations 0.0) => [ ((3 2 1 2 3) (2 3 1 3 2)) (0 0) ]"
     (if (> tolerance 0.0)
         (progn 
             (setq sorted-list (sort-list in-list))
@@ -1936,9 +1884,129 @@
     (setq out (mat-trans out))
     (values-list (list (first out) (second out))))
 
+;--------------- Array (Matrix) operations ---------------
+(defun simple-arr-determinant (arr)
+    (setq dims (array-dimensions arr))
+    (if (equal dims (list 2 2))
+        (- (* (aref arr 0 0) (aref arr 1 1)) (* (aref arr 0 1) (aref arr 1 0)))))
+
+(defun list-dims (l)
+    (setq out nil)
+    (if (listp l)  
+        (progn 
+            (setq out (append out (list (length l))))
+            (if (listp (car l))
+                (setq out (append out (list (list-dims (car l))))))))
+    (flat out))
+(defun list->array (l)
+    (make-array (list-dims l) :initial-contents l))
+
+(defun col-row-exclude (arr row col)
+    (setq dims (array-dimensions arr))
+    (setq out nil)
+    (loop for r from 0 to (- (first dims) 1) do
+        (if (not (eq r row))
+            (progn 
+                (setq row nil)
+                (loop for c from 0 to (- (second dims) 1) do    
+                    (if (not (eq c col))
+                        (progn 
+                            (setq val (aref arr r c))
+                            (setq row (append row (list val))))))
+                (setq out (append out (list row))))))
+    (list->array out))
+
+(defun arr-determinant (arr)
+    (setq dims (array-dimensions arr))
+    (setq out nil)
+    (if (equal dims (list 2 2))
+        (setq out (simple-arr-determinant arr))
+        (progn
+            (setq first-row (flat (get-arr-row arr 0)))
+            (setq signs (om- (om* 2 (nth-value 1 (om// (arithm-ser 1 (length first-row) 1) 2))) 1))
+            (setq out (reduce #'+ (loop for x in first-row and n from 0 to (- (length first-row) 1) and s in signs collect
+                (* s x (arr-determinant (col-row-exclude arr 0 n))))))))
+    out)
+
+(defun get-arr-rows (arr rows)
+    (setq rows (flat (list rows)))
+    (setq dims (array-dimensions arr))
+    (setq out nil)
+    (loop for r from 0 to (- (first dims) 1) do
+        (if (not (eq nil (member r rows)))
+            (progn 
+                (setq row nil)
+                (loop for c from 0 to (- (second dims) 1) do    
+                    (setq val (aref arr r c))
+                    (setq row (append row (list val))))
+                (setq out (append out (list row))))))
+    out)
+
+(defun get-arr-cols (arr cols)
+    (setq cols (flat (list cols)))
+    (setq dims (array-dimensions arr))
+    (setq out nil)
+    (loop for r from 0 to (- (first dims) 1) do
+        (setq row nil)
+        (loop for c from 0 to (- (second dims) 1) do    
+            (if (not (eq nil (member c cols)))
+                (progn
+                    (setq val (aref arr r c))
+                    (setq row (append row (list val))))))
+        (setq out (append out (list row))))
+    out)
+
+(defun covariance-matrix (data)
+    (setq trans-data (mat-trans data))
+    (loop for d1 in trans-data collect
+        (loop for d2 in trans-data collect
+            (list-covariance (mat-trans (list d1 d2))))))
+
+(defun identity-matrix (dims)
+    (loop for x from 0 to (- dims 1) collect
+        (subs-posn (repeat-n 0 dims) x 1)))
+
+(defun dot-product (v1 v2)
+    (reduce #'+ (om* v1 v2)))
+
+(defun matrix-mult (m1 m2)
+    (setq m2 (mat-trans m2))
+    (loop for row in m1 collect
+        (loop for col in m2 collect
+            (dot-product row col))))
+
+#| (defun chord-autodetect (self threshold)
+    (setq seq-dur (list-max (lonset self)))
+    (setq seg-dur 1250)
+    (setq overlap-factor 2)
+    (setq max-dist 3.4641016)
+    (setq threshold (* max-dist threshold))
+    (setq markers (arithm-ser 0 seq-dur seg-dur (/ seg-dur overlap-factor)))
+    (setq out nil)
+
+    (loop for m in markers and n from 0 to (- (length markers) 1) do
+        (setq seg (segment-seq self m seg-dur 1 0))
+        (setq mc-list (lmidic seg))
+        (setq chroma (flat (chroma-count mc-list)))
+        (setq chroma (om/ chroma (list-max chroma)))
+        (if (> n 0)
+            (progn
+                (setq dist (Euclidean-distance chroma pchroma nil))
+                (if (> dist threshold)
+                    (setq out (append out (list m)))
+                )
+            )
+        )
+        (setq pchroma (copy-tree chroma))
+        (setq pmarker m)
+    )
+    out
+) |#
 
 #| 
     TODO:
         - Granulate
         - PCA
+        - Chroma vector with durations and velocities
+        - Rhythmic-distribution
  |#

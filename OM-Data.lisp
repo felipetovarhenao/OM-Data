@@ -18,9 +18,9 @@
             DTW-align
             KDTree
             KNN
-            Optimal-sorting
             Markov-build
             Markov-run
+            Optimal-sorting
             ) nil)
         ("2-Metrics" nil nil (
             Euclidean-distance
@@ -35,20 +35,21 @@
             ) nil)
         ("3-List processing" nil nil (
             X-interpolation
-            List-quantize
-            List-mod
             Posn-map
             Pick-random
             List-wrap
             List-fold
+            List-symmetries
+            List-frames
+            List-quantize
+            List-mod
             Nested-position
             Nested-nth
+            Deep-nth
+            Deep-replace
             N-occurances
             Unique-seq
             Unique-scramble
-            List-frames
-            Deep-nth
-            Deep-replace
             ) nil)
         ("4-Midicents" nil nil (
             NRT
@@ -75,6 +76,8 @@
         ("7-Other" nil nil (
             L-system
             2D-Turtle
+            Vieru-seq
+            Make-sieve
             ) nil)
     )
 )
