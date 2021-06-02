@@ -29,13 +29,7 @@
     (if (listp list)
         (+ 1 (reduce #'max (mapcar #'depth list) :initial-value 0)) 0))
 
-(defun random-list (dims minval maxval)
-    (setq v-out nil)
-    (dotimes (x dims)
-        (setq v-out (append v-out (list (om-random minval maxval))))
-    ) v-out)
-
-(defun k-smart (data k)
+#| (defun k-smart (data k)
     (setq k-centroids (list (nth-random data)))
     (setq data (remove (car k-centroids) data :test 'equal))
     (setq x 1)
@@ -50,7 +44,7 @@
         (setq data (remove new-ck data :test 'equal))
         (setq k-centroids (append k-centroids new-ck))
         (setq x (+ x 1)))
-    k-centroids)
+    k-centroids) |#
 
 (defun mix (a b f)
     (if (and (atom a) (atom b))
@@ -63,7 +57,7 @@
         (mix a b f)
         (mapcar #'(lambda (in1 in2) (nested-mix in1 in2 f)) a b)))
 
-;--------------- dtw-path-cost ---------------
+#| ;--------------- dtw-path-cost ---------------
 (defun dtw-path-cost (a-list b-list)
     ; build cost matrix
     (setq matrix (make-array (list (length a-list) (length b-list))))
@@ -115,21 +109,9 @@
                         (setq y (- y 1)))))
             (setq path-cost (+ path-cost minval))
             (setq path-posn (append path-posn (list (list x y)))))
-    (list path-cost (reverse path-posn)))
+    (list path-cost (reverse path-posn))) |#
 
-; --------------- string-rewrite ---------------
-(defun string-rewrite (axiom rules iterations)
-    (setq axiom (flat (list axiom) 1))
-    (loop for n from 0 to (- iterations 1) do
-        (loop for a in axiom and i from 0 to (- (length axiom) 1) do
-            (loop for r in rules do
-                (if (equal a (first r))
-                    (progn
-                        (setf (nth i axiom) (second r))))))
-        (setq axiom (flat axiom 1)))
-    axiom)
-
-; -------------- M E T H O D S ---------------------
+#| ; -------------- M E T H O D S ---------------------
 
 ; -------------- Distortion ---------------------
 (defmethod! Distortion ((mc-list list) (dist number) &optional (mc-fund nil))
@@ -178,8 +160,8 @@
         (loop for v in (voices self) collect
             (Distortion v dist mc-fund)))
     (make-instance 'poly :voices voice-list))
-
-; --------------- Euclidean-distance ---------------
+ |#
+#| ; --------------- Euclidean-distance ---------------
 (defmethod! Euclidean-distance ((a-list list) (b-list list) (weights list))
     :initvals '((0 1 2 3) ((1 2 3 4) (3 4 6 8)) nil)
     :indoc '("list" "list of lists" "list (optional)")
@@ -207,9 +189,9 @@
     (abs (- b a)))
 
 (defmethod! Euclidean-distance ((a number) (b-list list) (weights list))
-    (loop for b in b-list collect (abs (- b a))))
+    (loop for b in b-list collect (abs (- b a)))) |#
 
-; --------------- NNS ---------------
+#| ; --------------- NNS ---------------
 (defmethod! NNS ((main-list list) (other-lists list) (weights list))
     :initvals '((0 0) ((1 1) (-1 1) (0 -1) (1 0) (2 1) (-1 -2)) nil)
     :indoc '("list" "list of lists" "list (optional)")
@@ -232,9 +214,9 @@
 
 #| (defmethod! NNS ((a number) (list-b list) (weights list))
     (setq out (NNS (list a) (mat-trans (list list-b)) weights))
-    (values-list (list (flat (nth-value 0 out)) (nth-value 1 out)))) |#
+    (values-list (list (flat (nth-value 0 out)) (nth-value 1 out)))) |# |#
 
-; --------------- Optimal-sorting ---------------
+#| ; --------------- Optimal-sorting ---------------
 (defmethod! Optimal-sorting ((st-list list) (other-lists list) (weights list))
     :initvals '((0 0 0 2) ((0 1 2 3) (2 3 4 5) (1 2 3 4)) nil)
     :indoc '("list (initial)" "list of lists" "list (optional)")
@@ -255,9 +237,9 @@
         (setq remaining (nth-value 0 (NNS (car remaining) (cdr remaining) weights))))
     (setq positions (nested-position output other-lists))
     (setq output (append (list st-list) output))
-    (values-list (list output positions)))
+    (values-list (list output positions))) |#
 
-; --------------- List-quantize ---------------
+#| ; --------------- List-quantize ---------------
 (defmethod! List-quantize ((a number) (b-list list) (accuracy number))
     :initvals '((2.5 4.03) (0 1 2 3 4 5 6) 1.0)
     :indoc '("source (list)" "target (list)" "accuracy (optional)")
@@ -314,9 +296,9 @@
 
 (defmethod! List-mod ((input-list list) (n list))
     (mapcar (lambda (input) 
-        (List-mod input-list input)) n))
+        (List-mod input-list input)) n)) |#
 
-; --------------- Fill-range ---------------
+#| ; --------------- Fill-range ---------------
 (defmethod! Fill-range ((chord-list list) (lower-bound number) (upper-bound number))
     :initvals '((3600 5200 6700 7000) 3600 9000)
     :indoc '("midicent list" "range lower bound" "range upperbound")
@@ -354,9 +336,9 @@
 
 (defmethod! Shift-posn ((chord-list list) (n-step list))
     (mapcar #'(lambda (input) 
-        (Shift-posn chord-list input)) n-step))
+        (Shift-posn chord-list input)) n-step)) |#
 
-; --------------- Posn-map ---------------
+#| ; --------------- Posn-map ---------------
 (defmethod! Posn-map ((l list))
     :initvals '(((0 0) (0 1) (1 0) (1 0) (0 0) (1 1)))
     :indoc '("list")
@@ -373,9 +355,9 @@
             (equal (member x thin-l :test 'equal) nil) 
             (setq thin-l (append thin-l (list x)))))
         (setq out (append out (list (position x thin-l :test 'equal))))) 
-    out)
+    out) |#
 
-;--------------- List-moments ---------------
+#| ;--------------- List-moments ---------------
 (defmethod! List-moments ((data list) (moments list))
     :initvals '((5 2 3 4 5 6) (0 1 2 3))
     :indoc '("list" "list")
@@ -413,9 +395,9 @@
                     (progn (setq skewness nil) (setq kurtosis nil)))
                 (posn-match (list mean st-dev skewness kurtosis) moments))
             (posn-match (list (car data) 0 nil nil) moments))
-        (loop for d in data collect (List-moments d moments))))
+        (loop for d in data collect (List-moments d moments)))) |#
 
-;--------------- List-Zscore ---------------
+#| ;--------------- List-Zscore ---------------
 (defmethod! List-Zscore ((x number) (l list))
     :initvals '((0 3 6) (0 1 2 3 4 5 6))
     :indoc '("list" "list")
@@ -431,9 +413,9 @@
     (/ (- mu x) sigma))
 
 (defmethod! List-Zscore ((x-list list) (l list))
-    (mapcar #'(lambda (input) (List-Zscore input l)) x-list))
+    (mapcar #'(lambda (input) (List-Zscore input l)) x-list)) |#
 
-; --------------- Pick-random ---------------
+#| ; --------------- Pick-random ---------------
 (defmethod! Pick-random ((in-list list) (weights list) (times integer))
     :initvals '(((1 1 1) (2 2 2) (3 3 3) (4 4 4)) (1 2 3 4) 1)
     :indoc '("list" "list" "integer")
@@ -462,7 +444,7 @@
             (setq rand (- rand w))
             (setq index (+ index 1))))
     out)
-
+ |#
 #| ;--------------- K-means ---------------
 (defmethod! K-means ((data list) (k integer) (weights list))
     :initvals '(((0 1 0) (-3 -1 2) (4 0 9) (-3 -5 -1) (0 4 -3) (2 1 -4)) 2 nil)
@@ -525,7 +507,7 @@
         (setf (nth (second ld) output) (append (nth (second ld) output) (list (first ld)))))
     (values-list (list output (nested-position output data)))) |#
 
-;--------------- K-means ---------------
+#| ;--------------- K-means ---------------
 (defmethod! K-means ((data list) (k integer) (weights list))
     :initvals '(((0 1 0) (-3 -1 2) (4 0 9) (-3 -5 -1) (0 4 -3) (2 1 -4)) 2 nil)
     :indoc '("list" "k (integer)" "weights (optional)")
@@ -587,9 +569,9 @@
     (loop for ld in labeled-data do
         (setf (nth (second ld) output) (append (nth (second ld) output) (list (first ld))))
         (setf (nth (second ld) positions) (append (nth (second ld) positions) (list (third ld)))))
-    (values-list (list output positions)))
+    (values-list (list output positions))) |#
 
-;--------------- X-interpolation ---------------
+#| ;--------------- X-interpolation ---------------
 (defmethod! X-interpolation ((a-list list) (b-list list) (traj list))
     :initvals '(
         ((7200 7700 8100) (6200 6700 7100) (7600 8100 7200) (5300 5900 5000) (7900 7200 7600) (5700 5000 5300) (7100 6400 6700) (6000 6500 6900)) 
@@ -627,8 +609,8 @@
         :ldur (ldur a-list)
         :lvel (lvel a-list)
         :loffset (loffset a-list)
-        :lchan (lchan a-list)))
-
+        :lchan (lchan a-list))) |#
+#| 
 ; -------------- Nested-position ---------------------
 (defmethod! Nested-position ((a list) (b-list list))
     :initvals '((("a") "b" (("c") "d") ((("e")))) ("a" "b" "c" "d" "e"))
@@ -677,9 +659,9 @@
     (nth a b-list))
 
 (defmethod! Nested-nth ((a symbol) (b-list list))
-    (nth a b-list))
+    (nth a b-list)) |#
 
-;--------------- List-wrap---------------
+#| ;--------------- List-wrap---------------
 (defmethod! List-wrap ((val number) (lower-bound number) (upper-bound number))
     :initvals '((-2 -1 0 1 2 3 4 5 6) 0 3)
     :indoc '("list" "number" "number")
@@ -740,8 +722,8 @@
 
 (defmethod! List-fold ((val list) (lower-bound number) (upper-bound number))
     (mapcar #'(lambda (input) (List-fold input lower-bound upper-bound)) val))
-
-;--------------- Chroma-count ---------------
+ |#
+#| ;--------------- Chroma-count ---------------
 (defmethod! Chroma-count ((mc list))
     :initvals '((6000 6400 6700 7000 7200))
     :indoc '("list")
@@ -784,8 +766,8 @@
                 (setq times (+ times 1)))
             (cdr icv))
         (mapcar #'(lambda (input) (IC-vector input)) mc)))
-
-;--------------- DTW ---------------
+ |#
+#| ;--------------- DTW ---------------
 (defmethod! DTW ((list-a list) (list-b list))
     :initvals '((0 1 2 3 4 5) ((1 1 2 3 5) (0 0 1 2 3 3 4 5) (1 3 4 5)))
     :indoc '("list" "list of lists")
@@ -827,8 +809,8 @@
         (loop for p in posn collect
             (list (nth (first p) a) (nth (second p) b)))
         (mapcar #'(lambda (input1 input2) (DTW-align a input1 input2)) b posn)))
-
-;--------------- N-occurances ---------------
+ |#
+#| ;--------------- N-occurances ---------------
 (defmethod! N-occurances ((x number) (l list))
     :initvals '(2 (0 1 2 1 4 3 2 2))
     :indoc '("item" "list")
@@ -858,9 +840,9 @@
             (
                 (> (depth y) (depth x))
                 (setq counter (+ counter (N-occurances x y))))))
-    counter)
+    counter) |#
 
-;--------------- Unique-seq ---------------
+#| ;--------------- Unique-seq ---------------
 (defmethod! Unique-seq ((l list))
     :initvals '(((1 2) (3 3) (4 2) (4 2) (2 2) (2 2)))
     :indoc '("list")
@@ -874,8 +856,8 @@
     (loop for x from 1 to (- (length l) 1) do
         (if (not (equal (nth x l) (nth (- x 1) l)))
             (setq output (append output (list (nth x l))))))
-    output)
-
+    output) |#
+#| 
 ;--------------- Mc-clip ---------------
 (defmethod! Mc-clip ((mc number) (lower-bound number) (upper-bound number))
     :initvals '(5500 6000 7200)
@@ -951,9 +933,9 @@
             (progn 
                 (setq mc-start (+ mc-start (nth (mod x (length ic)) ic)))
                 (setq out (append out (list mc-start))))))
-    (mc-wrap out lower-bound upper-bound))
+    (mc-wrap out lower-bound upper-bound)) |#
 
-;--------------- Unique-scramble ---------------
+#| ;--------------- Unique-scramble ---------------
 (defmethod! Unique-scramble ((a-list list) (times integer))
     :initvals '((0 1 2) 4)
     :indoc '("list" "integer")
@@ -978,8 +960,8 @@
         (setq out (append out (list scrambled)))
         (setq current (copy-tree scrambled)))
     out)
-
-;--------------- Euclidean-rhythm ---------------
+ |#
+#| ;--------------- Euclidean-rhythm ---------------
 (defmethod! Euclidean-rhythm ((numbeats integer) (period integer) (rotation integer))
     :initvals '(5 13 0)
     :indoc '("integer" "integer" "integer")
@@ -1050,8 +1032,8 @@
             :lonset o 
             :ldur d 
             :lvel v)))))
-
-;--------------- Extract-channel ---------------
+ |#
+#| ;--------------- Extract-channel ---------------
 (defmethod! Extract-channel ((self chord-seq) (midi-chan integer))
     :initvals '((make-instance 'chord-seq :lmidic '((6000 7200) (6400 7000) 6700) :lchan '((1 1) (2 1) 3)) 1)
     :indoc '("chord-seq or multi-seq" "integer")
@@ -1166,8 +1148,8 @@
     (make-instance 'multi-seq :chord-seqs 
         (loop for seq in (inside self) collect
             (Segment-seq seq time-pt samp-dur detection-mode clip-mode))))
-
-;--------------- List-frames ---------------
+ |#
+#| ;--------------- List-frames ---------------
 (defmethod! List-frames ((in-list list) (size integer) &optional (hop 1))
     :initvals '((0 1 2 3 4 5 6) 2 1)
     :indoc '("list" "integer" "integer")
@@ -1186,9 +1168,9 @@
     (while (< x max-index)
         (setq out (append out (list (posn-match in-list (om+ indices x) ))))
         (setq x (+ x (max 1 hop))))
-    out)
+    out) |#
 
-;--------------- Markov-build ---------------
+#| ;--------------- Markov-build ---------------
 (defmethod! Markov-build ((data list) (order integer))
     :initvals '((0 2 1 3 2 4 3 5 4 6 5 4 3 2 1 0) 1)
     :indoc '("list" "integer")
@@ -1244,8 +1226,8 @@
                     (print "MARKOV-RUN: Sequence reached dead end before desired length")
                 )
                 (setq current-state (nth-random states)))))
-    output)
-;--------------- Histogram ---------------
+    output) |#
+#| ;--------------- Histogram ---------------
 (defmethod! Histogram ((data list) (bins integer))
     :initvals '((0 5 2 8 4.5 9 1 0.3 4 5 0.4 -0.3 5 13) 5)
     :indoc '("list" "integer")
@@ -1264,9 +1246,9 @@
             (if (and (>= d lower) (< d upper))
                 (setq counter (+ counter 1))))
         (setq histo (append histo (list (om-make-point lower counter)))))
-    (make-instance 'bpf :point-list histo :decimal 2))
+    (make-instance 'bpf :point-list histo :decimal 2)) |#
 
-;--------------- Multi-join---------------
+#| ;--------------- Multi-join---------------
 (defmethod! Multi-join ((seqs list) &optional (mode '0) (concat-offset nil))
     :initvals '(nil '0 nil)
     :indoc '("multi-seq or poly" "join mode" "list")
@@ -1316,9 +1298,9 @@
     out)
 
 (defmethod! Get-transients ((self multi-seq) (threshold number))
-    (Get-transients (Multi-join self 1) threshold))
+    (Get-transients (Multi-join self 1) threshold)) |#
 
-; --------------- L-system ---------------
+#| ; --------------- L-system ---------------
 (defmethod! L-system ((axiom number) (rules list) (generations integer))
     :initvals '('(x f) '((x (x + y f + + y f - f x - - f x f x - y f +)) (y (- f x + y f y f + + y f + f x - - f x - y))) 3)
     :indoc '("atom" "list" "integer")
@@ -1330,7 +1312,7 @@
     (string-rewrite axiom rules generations))
 
 (defmethod! L-system ((axiom list) (rules list) (generations integer))
-    (string-rewrite axiom rules generations))
+    (string-rewrite axiom rules generations)) |#
 #| 
 ; --------------- 1D-Turtle ---------------
 (defmethod! 1D-Turtle ((lsys list) (mag-rules list) (sign-rules list)(memory-rules list) &optional (x 0))
@@ -1367,7 +1349,7 @@
     out) 
  |#
 
-; --------------- 2D-Turtle ---------------
+#| ; --------------- 2D-Turtle ---------------
 (defmethod! 2D-Turtle ((lsys list) (mag-rules list) (theta-rules list) (memory-rules list) &optional (theta 0))
     :initvals '(([ f - f ] + f [ f - f ] + f [ f - f ] + f [ f - f ] + f [ f - f ] + f [ f - f ] + f) '((f 1)) '((+ 60) (- -60)) '(([ 1) (] 0)) 0)
     :indoc '("list" "list" "list" "list" "number")
@@ -1404,9 +1386,9 @@
                             (setq theta (third state))
                             (setq mag (fourth state))
                             (setq memory (butlast memory))))))))
-    (make-instance 'bpc :point-list out))
+    (make-instance 'bpc :point-list out)) |#
 
-; --------------- Risset rhythm---------------
+#| ; --------------- Risset rhythm---------------
 (defun riss-onsets (onsets totdur period v mode)
     (setq totdur (list-max onsets))
     (setq v-exp (expt 2 v))
@@ -1493,9 +1475,9 @@
             :lchan (flat (repeat-n chans (* rep v-exp)) 1)
             :legato leg))
         (setq out (append out (list seq))))
-    (reverse out))
+    (reverse out)) |#
 
-;--------------- List-median ---------------
+#| ;--------------- List-median ---------------
 (defmethod! List-median ((l list))
     :initvals '((4 2 5 6 1 2 0 -4))
     :indoc '("list")
@@ -1512,9 +1494,9 @@
                 (progn
                     (setq index (/ size 2))
                     (* (+ (nth (- index 1) l) (nth index l)) 0.5))))
-        (mapcar #'(lambda (input) (List-median input)) l)))
+        (mapcar #'(lambda (input) (List-median input)) l))) |#
 
-;--------------- List-mode ---------------
+#| ;--------------- List-mode ---------------
 (defmethod! List-mode ((l list))
     :initvals '((4 2 5 6 1 2 0 -4))
     :indoc '("list")
@@ -1528,9 +1510,9 @@
             (if (eq (list-max counts) (list-min counts))
                 nil
                 (remove-dup (posn-match l (get-posn (list-max counts) counts)) 'equal 1)))
-        (mapcar #'(lambda (input) (List-mode input)) l)))
+        (mapcar #'(lambda (input) (List-mode input)) l))) |#
 
-;--------------- nil-matrix ---------------
+#| ;--------------- nil-matrix ---------------
 (defun nil-matrix (dims)
     (setq out nil)
     (loop for d in dims do
@@ -1617,8 +1599,8 @@
                 (setq out (car out)))
             out)
         (mapcar #'(lambda (input) (KNN input k tree-nodes kd-tree)) data)))
-
-;--------------- List-covariance ---------------
+ |#
+#| ;--------------- List-covariance ---------------
 (defmethod! List-covariance ((data list))
     :initvals '(((-2 2) (0 0) (1 -1) (-1 1) (-4 3) (-3 4)))
     :indoc '("list")
@@ -1665,8 +1647,8 @@
         (setq out (make-instance 'bpc-lib :bpf-list bp-list)))
     (if (equal dims 3)
         (setq out (make-instance '3dc-lib :bpf-list bp-list)))
-    out)
-
+    out) |#
+#| 
 ;--------------- Neo-Riemannian Transformations ---------------
 (defun triad-posn (mc)
     (setq pc-set (nth-value 1 (om// mc 1200)))
@@ -1764,8 +1746,8 @@
         (loop for tr in transformations collect
             (setq mc (apply-nrt mc tr)))
         (mapcar #'(lambda (input) (apply-nrt input transformations)) mc)))
-
-;--------------- Make-sieve ---------------
+ |#
+#| ;--------------- Make-sieve ---------------
 (defmethod! Make-sieve ((list list) (reps integer) sieve-mode sieve-type &optional (offset '0))
     :initvals '((2 3) 1 'union 'nil 0)
     :indoc '("list" "integer" "menu" "menu" "number")
@@ -1844,9 +1826,9 @@
             (setq diff-seq (append diff-seq (list val))))
         (setq out (append out (list diff-seq)))
         (setq seq (append diff-seq (list (car diff-seq)))))
-    out)
+    out) |#
 
-;--------------- List-symmetries ---------------
+#| ;--------------- List-symmetries ---------------
 (defmethod! List-symmetries ((in-list list) mode &optional (tolerance 0.0))
     :initvals '((3 1 1 3 2 1 1 2) 'rotations 0.0)
     :indoc '("list" "menu" "number")
@@ -1882,7 +1864,7 @@
                 (setq out (append out (list (list f 0)))))))
     (stable-sort out #'< :key 'second)
     (setq out (mat-trans out))
-    (values-list (list (first out) (second out))))
+    (values-list (list (first out) (second out)))) |#
 
 ;--------------- Array (Matrix) operations ---------------
 (defun simple-arr-determinant (arr)
@@ -1974,34 +1956,6 @@
     (loop for row in m1 collect
         (loop for col in m2 collect
             (dot-product row col))))
-
-#| (defun chord-autodetect (self threshold)
-    (setq seq-dur (list-max (lonset self)))
-    (setq seg-dur 1250)
-    (setq overlap-factor 2)
-    (setq max-dist 3.4641016)
-    (setq threshold (* max-dist threshold))
-    (setq markers (arithm-ser 0 seq-dur seg-dur (/ seg-dur overlap-factor)))
-    (setq out nil)
-
-    (loop for m in markers and n from 0 to (- (length markers) 1) do
-        (setq seg (segment-seq self m seg-dur 1 0))
-        (setq mc-list (lmidic seg))
-        (setq chroma (flat (chroma-count mc-list)))
-        (setq chroma (om/ chroma (list-max chroma)))
-        (if (> n 0)
-            (progn
-                (setq dist (Euclidean-distance chroma pchroma nil))
-                (if (> dist threshold)
-                    (setq out (append out (list m)))
-                )
-            )
-        )
-        (setq pchroma (copy-tree chroma))
-        (setq pmarker m)
-    )
-    out
-) |#
 
 #| 
     TODO:

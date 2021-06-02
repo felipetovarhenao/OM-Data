@@ -7,7 +7,21 @@
 
 (in-package :om)
 
-(compile&load (om-relative-path '("sources") "OM-Data-functions")) ; includes the functions in 'sources' folder
+; (compile&load (om-relative-path '("sources") "OM-Data-functions" "omd-classification")) ; includes the functions in 'sources' folder
+
+(mapcar #'(lambda (file) (compile&load 
+                        (make-pathname :directory (append (pathname-directory *load-pathname*) '("sources")) 
+                                       :name file)))
+      '(
+          "unlisted-functions"
+          "classification"
+          "metrics"
+          "list-processing"
+          "midicents"
+          "rhythm"
+          "score"
+          "misc"
+        ))
 
 (om::fill-library 
     '(
@@ -73,7 +87,7 @@
             Multi-join
             Get-transients
             ) nil)
-        ("7-Other" nil nil (
+        ("7-Miscellaneous" nil nil (
             L-system
             2D-Turtle
             Vieru-seq
