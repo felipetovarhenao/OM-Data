@@ -1,4 +1,4 @@
-<div style="text-align:center"><img src="resources/icons/000.png" width="110" height="110"/></div>
+<div style="text-align:center"><img src="resources/icons/000.png" width="150" height="150"/></div>
 
 # OM-Data library
 
