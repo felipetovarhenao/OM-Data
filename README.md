@@ -81,6 +81,6 @@ OM-Data
     ├── L-system
     ├── 2D-Turtle
     ├── Make-sieve
-    └── 2D-Turtle
+    └── Vieru-seq
 
  ```
