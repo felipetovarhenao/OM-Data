@@ -152,3 +152,30 @@
         (setq out (append out (list diff-seq)))
         (setq seq (append diff-seq (list (car diff-seq)))))
     out)
+
+;--------------- Recursivus ---------------
+(defmethod! Recursivus ((list-a list) (list-b list))
+    :initvals '((7300 7500 7200 6600 6800 6400 6700 7400) (7400 8200 7700 8000 6900 7100 6500 6300 6600 8500))
+    :indoc '("list" "number" "integer" "menu")
+    :menuins '((3 (("nil" 0) ("incl. fundamental" 1))))
+    :icon 000
+    :doc "Given two numeric lists A and B, outputs a list of possible extensions of for each element in A through segments in B. Based on the technique described by Antonio de Sousa Dias in 'Free transposition of Audio Processing Techniques into the Domain of Notes'
+    "
+    (setq dx-a (x->dx (append list-a (last list-a))))
+    (setq numrot (length list-b))
+    (setq out (mat-trans (list (mat-trans (list list-a)))))
+    (loop for r from 0 to (- numrot 1) do
+        (setq dx-b (rotate list-b r))
+        (setq dx-b (x->dx dx-b))
+        (loop for fn from 1 to numrot do
+            (setq b-seg (first-n dx-b fn))
+            (setq dx-seg (reduce #'+ b-seg))
+            (loop for a in dx-a and x from 0 to (length dx-a) do
+                (if (equal dx-seg a)
+                    (progn
+                        (setq mel-seg (dx->x (nth x list-a) b-seg))
+                        (if (> (length mel-seg) 2)
+                            (setq mel-seg (butlast mel-seg)))
+                        (if (equal nil (position mel-seg (nth x out) :test 'equal))
+                            (setq out (subs-posn out x (append (nth x out) (list mel-seg))))))))))
+    out)

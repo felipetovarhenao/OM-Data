@@ -315,3 +315,33 @@
                 (setq out (append out (list mc-start))))))
     (mc-wrap out lower-bound upper-bound))
 
+(defmethod! Harmonic-mapping ((mc-list list) (mc-fund number) (max-dist integer) &optional (mode '0))
+    :initvals '((6000 6300 6700 7200) 4500 200 0)
+    :indoc '("list" "number" "integer" "menu")
+    :menuins '((3 (("nil" 0) ("incl. fundamental" 1))))
+    :icon 000
+    :doc "Re-distributes a list of midicents in register, such that it resembles a harmonic series of a given fundamental.
+    "
+    (if (< max-dist 15)
+        (setq max-dist 15))
+    (setq f0 (mc->f mc-fund))
+    (setq pcs (nth-value 1 (om// mc-list 1200)))
+    (setq p-index 1)
+    (setq out nil)
+    (while (> (length pcs) 0)
+        (setq partial (f->mc (* f0 p-index)))
+        (setq pool (fill-range pcs (- partial 600) (+ partial 600)))
+        (setq closest-elem (car (closest partial pool)))
+        (setq dist (abs (- partial closest-elem)))
+        (if (< dist max-dist)
+            (progn 
+                (setq out (append out (list closest-elem)))
+                (setq pc (nth-value 1 (om// closest-elem 1200)))
+                (setq pcs (remove pc pcs :count 1))))
+        (setq p-index (+ p-index 1)))
+    (if (equal mode '1)
+        (setq out (append (list mc-fund) out)))
+    out)
+
+
+
