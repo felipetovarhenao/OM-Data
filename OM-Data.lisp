@@ -67,6 +67,7 @@
             ) nil)
         ("4-Midicents" nil nil (
             NRT
+            Harmonic-distr
             Distortion
             Fill-range
             Shift-posn
@@ -82,6 +83,7 @@
             Risset-rhythm
             ) nil)
         ("6-Score" nil nil (
+            Score-filter
             Segment-seq
             Extract-channel
             Multi-join

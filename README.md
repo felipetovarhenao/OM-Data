@@ -57,6 +57,7 @@ OM-Data
 │
 ├── 4-Midicents
 │   ├── NRT
+│   ├── Harmonic-distr
 │   ├── Distortion
 │   ├── Fill-range
 │   ├── Shift-posn
@@ -72,6 +73,7 @@ OM-Data
 │   └── Euclidean-rhythm
 │
 ├── 6-Score
+│   ├── Score-filter
 │   ├── Segment-seq
 │   ├── Extract-channel
 │   ├── Multi-join

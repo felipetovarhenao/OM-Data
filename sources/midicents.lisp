@@ -315,12 +315,12 @@
                 (setq out (append out (list mc-start))))))
     (mc-wrap out lower-bound upper-bound))
 
-(defmethod! Harmonic-mapping ((mc-list list) (mc-fund number) (max-dist integer) &optional (mode '0))
+(defmethod! Harmonic-distr ((mc-list list) (mc-fund number) (max-dist integer) &optional (mode '0))
     :initvals '((6000 6300 6700 7200) 4500 200 0)
     :indoc '("list" "number" "integer" "menu")
     :menuins '((3 (("nil" 0) ("incl. fundamental" 1))))
     :icon 000
-    :doc "Re-distributes a list of midicents in register, such that it resembles a harmonic series of a given fundamental.
+    :doc "Re-distributes a list of midicents in register, such that it resembles a harmonic series of a given (virtual) fundamental.
     "
     (if (< max-dist 15)
         (setq max-dist 15))
