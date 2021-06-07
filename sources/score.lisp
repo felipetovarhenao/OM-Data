@@ -181,8 +181,7 @@
         (make-instance 'chord-seq 
             :lmidic '(4800 6600 7200 8000)
             :onset '(0 300)
-            :lvel '(30 50 90 127)
-            )
+            :lvel '(30 50 90 127))
         '((6000 7200) (80 100)) 
         (list 'midic 'vel) (list 'pass 'reject))
     :indoc '("sequence" "list" "list (midic, pc, onset, dur, vel, offset, and/or chan)" "list (pass or reject)")
