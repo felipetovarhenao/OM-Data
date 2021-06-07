@@ -96,7 +96,7 @@
     )
 )
 
-(print "
+(om-print "
 ***************************
 OM-Data library - 2021
 [www.felipe-tovar-henao.com]

@@ -159,7 +159,7 @@
     :indoc '("list" "number" "menu")
     :menuins '((2 (("nil" nil) ("rotations" 'rotations))))
     :icon 000
-    :doc "Given two numeric lists A and B, outputs a list of possible extensions of for each element in A through segments in B. Based on the technique described by Antonio de Sousa Dias in 'Free transposition of Audio Processing Techniques into the Domain of Notes'
+    :doc "Given two numeric lists A and B, outputs a list of possible extensions of A through segments B. More precisely, it searches for segments of B, where the sum of changes in those segments match the change (i.e. interval) between adjacent elements in A. Based on the technique described by Antonio de Sousa Dias in 'Free transposition of Audio Processing Techniques into the Domain of Notes'
     "
     (setq dx-a (x->dx (append list-a (last list-a))))
     (setq numrot (length list-b))
@@ -180,7 +180,5 @@
                         (if (> (length mel-seg) 2)
                             (setq mel-seg (butlast mel-seg)))
                         (if (equal nil (position mel-seg (nth x out) :test 'equal))
-                            (setq out (subs-posn out x (append (nth x out) (list mel-seg))))))))
-        )
-    )
+                            (setq out (subs-posn out x (append (nth x out) (list mel-seg))))))))))
     out)

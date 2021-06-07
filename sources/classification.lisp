@@ -317,7 +317,7 @@
             (if (equal mode '0)
                 (progn
                     (setq rep iterations)
-                    (print "MARKOV-RUN: Sequence reached dead end before desired length")
+                    (om-print "MARKOV-RUN => Sequence reached dead end before desired length")
                 )
                 (setq current-state (nth-random states)))))
     output)

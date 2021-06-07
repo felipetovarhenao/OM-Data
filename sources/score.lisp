@@ -175,5 +175,78 @@
 (defmethod! Get-transients ((self multi-seq) (threshold number))
     (Get-transients (Multi-join self 1) threshold))
 
+;--------------- Get-transients ---------------
+(defmethod! Score-filter ((self chord-seq) (ranges list) (filter-params list) (filter-types list))
+    :initvals '(
+        (make-instance 'chord-seq 
+            :lmidic '(4800 6600 7200 8000)
+            :onset '(0 300)
+            :lvel '(30 50 90 127)
+            )
+        '((6000 7200) (80 100)) 
+        (list 'midic 'vel) (list 'pass 'reject))
+    :indoc '("sequence" "list" "list (midic, pc, onset, dur, vel, offset, and/or chan)" "list (pass or reject)")
+    :icon 000
+    :doc "Outputs a list of onsets corresponding to detected transients in a score object." 
+    (setq positions (loop for fp in filter-params collect
+        (cond 
+            ((equal fp 'midic) 0)
+            ((equal fp 'onset) 1)
+            ((equal fp 'dur) 2)            
+            ((equal fp 'vel) 3)
+            ((equal fp 'offset) 4)
+            ((equal fp 'chan) 5)
+            ((equal fp 'pc) 6))))
+    (setq modes (loop for ft in filter-types collect
+        (cond 
+            ((equal ft 'pass) 0)
+            ((equal ft 'reject) 1))))
+    (setq events (get-notes self))
+    (setq events (loop for e in events collect
+        (append e (list (/ (nth-value 1 (om// (nth 0 e) 1200)) 100)))))
+    (setq out nil)
+    (loop for e in events do
+        (setq out (append out (list (multi-band-filter e positions ranges modes)))))   
+    (setq out (remove nil out))
+    (setq out (mat-trans out))
+    (make-instance 'chord-seq
+        :lmidic (first out)
+        :lonset (second out)
+        :ldur (third out)
+        :lvel (fourth out)
+        :loffset (fifth out)
+        :lchan (sixth out)
+        :legato (legato self)))
+
+(defun multi-band-filter (in-list n-pos range mode)
+    (setq out nil)
+    (loop for n in n-pos and r in range and m in mode do
+        (if (and (>= (nth n in-list) (list-min r)) (<= (nth n in-list) (list-max r)))
+            (setq p t)
+            (setq p nil))
+        (if (eq m 0)
+            nil
+            (setq p (not p)))
+        (setq out (append out (list p))))
+    (if (equal (remove-dup out 'equal 1) (list t))
+        in-list))
+
+;--------------- Get-transients ---------------
+(defmethod! Get-notes ((self chord-seq))
+    :initvals '(nil)
+    :indoc '("sequence")
+    :icon 000
+    :doc "" 
+    (setq mc (lmidic self))
+    (setq onsets (lonset self))
+    (setq durs (ldur self))
+    (setq vels (lvel self))
+    (setq offsets (loffset self))
+    (setq chans (lchan self))
+    (setq out nil)
+    (loop for m in mc and on in onsets and d in durs and v in vels and of in offsets and c in chans do
+        (loop for subm in m and subd in d and subv in v and subof in of and subc in c do
+            (setq out (append out (list (list subm on subd subv subof subc))))))
+    out)
     
 
