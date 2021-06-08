@@ -258,14 +258,14 @@
     :indoc '("sequence")
     :icon 000
     :doc "Extracts event information from a CHORD-SEQ in the form of individual lists per note. Each list is formatted as follows:
-        MIDICENT
+       (MIDICENT
         ONSET
         DURATION
         VELOCITY
         OFFSET
         MIDI-CHANNEL
         INTER-ONSET_DISTANCE
-        CHORD-SIZE
+        CHORD-SIZE)
     " 
     (setq mc (lmidic self))
     (setq onsets (lonset self))
@@ -279,5 +279,104 @@
         (loop for subm in m and subd in d and subv in v and subof in of and subc in c do
             (setq out (append out (list (list subm on subd subv subof subc dxo (length m)))))))
     out)
+
+
+;--------------- Granulate ---------------
+(defmethod! Granulate ((self chord-seq) (output-dur number) grain-dur write-incr read-incr &optional (st-read-time '0) (dur-var '0) (write-incr-var '0) (read-incr-var '0) (vel-var '0) (read-mode 'linear))
+    :initvals '(
+        (make-instance 'chord-seq
+            :lmidic '((6000 6400 6700) (6000 6500 6900) (5900 6200 6500 6700) (6000 6400 6700))
+            :lonset '(0 1000 1500 2000)
+            :ldur '(1000 500 500 1000))
+        5000
+        (500 200 100)
+        (250 50)
+        (50 200)
+        0
+        0
+        0
+        0
+        0
+        'circular)
+    :menuins '((8 (("linear" 'linear) ("circular" 'circular))))
+    :indoc '("sequence" "number (ms)" "number or list (ms)" "number or list (ms)" "number or list (ms)" "number (ms)" "number or list (ms)" "number or list (ms)" "number or list (ms)" "menu")
+    :icon 000
+    :doc "Performs symbolic granulation on a CHORD-SEQ.
+    " 
+    (setq cents (lmidic self))
+    (setq onsets (mat-trans (list (lonset self))))
+    (setq durs (ldur self))
+    (setq vels (lvel self))
+    (setq chans (lchan self))
+    (setq writehead 0)
+    (setq tblsize 1000)
+
+    (setq write-incr-var (om-abs write-incr-var))
+    (setq read-incr-var (om-abs write-incr-var))
+    (setq vel-var (om-abs vel-var))
+    (setq dur-var (om-abs dur-var))
+
+    (if (atom grain-dur)
+        (setq durtable (repeat-n grain-dur tblsize))
+        (setq durtable (nth-value 2 (om-sample grain-dur tblsize))))
+    (if (atom write-incr)
+        (setq writetbl (repeat-n write-incr tblsize))
+        (setq writetbl (nth-value 2 (om-sample write-incr tblsize))))
+    (if (atom read-incr)
+        (setq readtbl (repeat-n read-incr tblsize))
+        (setq readtbl (nth-value 2 (om-sample read-incr tblsize)))) 
+    (if (atom dur-var)
+        (setq durvartable (repeat-n dur-var tblsize))
+        (setq durvartable (nth-value 2 (om-sample dur-var tblsize))))    
+    (if (atom write-incr-var)
+        (setq wincrvartable (repeat-n write-incr-var tblsize))
+        (setq wincrvartable (nth-value 2 (om-sample write-incr-var tblsize))))   
+    (if (atom read-incr-var)
+        (setq rincrvartable (repeat-n read-incr-var tblsize))
+        (setq rincrvartable (nth-value 2 (om-sample read-incr-var tblsize))))  
+    (if (atom vel-var)
+        (setq velvartable (repeat-n vel-var tblsize))
+        (setq velvartable (om-clip (nth-value 2 (om-sample vel-var tblsize)) 0 127)))
     
+    (setq velvartable (om/ velvartable 127.0))
+    (setq event-posn nil)
+    (setq gr-durs nil)
+    (setq gr-onsets nil)
+    (setq gr-vels nil)
+    (setq readhead st-read-time)
+
+    (setq input-dur (list-max onsets))
+    (while (<= writehead output-dur)
+        (setq index (om-round (* (/ writehead output-dur) (- tblsize 1))))
+        (setq dur (nth index durtable))
+        (setq r-incr (nth index readtbl))
+        (setq w-incr (nth index writetbl))
+        (setq wvar (nth index wincrvartable))
+        (setq rvar (nth index rincrvartable))
+        (setq vvar (nth index velvartable))
+
+        (setq wvar (om-random (* -1 wvar) wvar))
+        (setq rvar (om-random (* -1 rvar) rvar))
+        (setq dvar (om-random (* -1 dur-var) dur-var))
+        (setq vvar (om-random (- 1 vvar) 1))
+        
+        (setq evpos (car (nth-value 1 (NNS (list readhead) onsets nil))))
+        (setq event-posn (append event-posn (list evpos)))
+        (setq gr-onsets (append gr-onsets (list writehead)))
+        (setq gr-durs (append gr-durs (list (om-clip (nth evpos durs) 10 (+ dur dvar)))))
+        (setq gr-vels (append gr-vels (list (om-abs (om* (nth evpos vels) vvar)))))
+
+        (setq readhead (+ readhead r-incr rvar))
+        (if (and (> readhead input-dur) (equal read-mode 'circular))
+            (setq readhead (nth-value 1 (om// readhead input-dur))))
+
+        (setq writehead (+ writehead w-incr wvar)))
+
+    (make-instance 'chord-seq
+        :lmidic (posn-match cents event-posn)
+        :lonset (om-clip gr-onsets 0 nil)
+        :ldur gr-durs
+        :lvel gr-vels
+        :lchan (posn-match chans event-posn)))
+
 
