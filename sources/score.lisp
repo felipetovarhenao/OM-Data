@@ -354,23 +354,24 @@
         (setq wvar (nth index wincrvartable))
         (setq rvar (nth index rincrvartable))
         (setq vvar (nth index velvartable))
+        (setq dvar (nth index durvartable))
 
         (setq wvar (om-random (* -1 wvar) wvar))
         (setq rvar (om-random (* -1 rvar) rvar))
-        (setq dvar (om-random (* -1 dur-var) dur-var))
+        (setq dvar (om-random (* -1 dvar) dvar))
         (setq vvar (om-random (- 1 vvar) 1))
         
         (setq evpos (car (nth-value 1 (NNS (list readhead) onsets nil))))
         (setq event-posn (append event-posn (list evpos)))
         (setq gr-onsets (append gr-onsets (list writehead)))
-        (setq gr-durs (append gr-durs (list (om-clip (nth evpos durs) 10 (+ dur dvar)))))
+        (setq gr-durs (append gr-durs (list (om-clip (nth evpos durs) 10 (max 10 (+ dur dvar))))))
         (setq gr-vels (append gr-vels (list (om-abs (om* (nth evpos vels) vvar)))))
 
         (setq readhead (+ readhead r-incr rvar))
         (if (and (> readhead input-dur) (equal read-mode 'circular))
             (setq readhead (nth-value 1 (om// readhead input-dur))))
 
-        (setq writehead (+ writehead w-incr wvar)))
+        (setq writehead (om-clip (+ writehead w-incr wvar) 0 nil)))
 
     (make-instance 'chord-seq
         :lmidic (posn-match cents event-posn)
