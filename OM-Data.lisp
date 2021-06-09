@@ -20,8 +20,7 @@
           "midicents"
           "rhythm"
           "score"
-          "misc"
-        ))
+          "misc"))
 
 (om::fill-library 
     '(
@@ -88,12 +87,14 @@
             Extract-channel
             Multi-join
             Get-transients
+            Granulate
             ) nil)
         ("7-Miscellaneous" nil nil (
             L-system
             2D-Turtle
             Vieru-seq
             Make-sieve
+            Recursivus
             ) nil)
     )
 )

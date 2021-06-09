@@ -2,17 +2,18 @@
 
 # OM-Data library
 
-**OM-Data** is a currently developing library of elementary functions, mostly aimed at data processing and analysis in **OpenMusic**. The library includes functions for data metrics, classification, sorting, and handling, as well as some functions for midicent manipulation.
-These include `K-means`, `DTW`, `NNS`, `Markov-build`, `Markov-run`, `List-moments`, `Euclidean-distance`, `Segment-seq`, `Chroma-count`, `IC-vector`, among others.
+**OM-Data** is a library of elementary functions, partially aimed at data modelling and analysis in **OpenMusic**. The library includes functions for data metrics, classification, and processing, as well as some higher-level functions for specific musical operations.
+These include `K-means`, `DTW`, `NNS`, `KDTree`, `KNN`, `Markov-build`, `Markov-run`,  `Segment-seq`, `Score-filter`, `Get-transients`, `Chroma-count`, `IC-vector`, among many others.
 
-A list of example patches are included, demonstrating possible musical applications of some these functions.
+A list of example patches are included, demonstrating possible musical applications for some of these functions.
 
-Since **OM-Data** is still in its early stages, only beta releases will be made at the moment.
+**OM-Data** is still in development.
 
 For info on how to install external libraries in **OM** visit: https://support.ircam.fr/docs/om-libraries/main/co/OM-Libraries.html 
 
 Once the library is installed and loaded into the **OM** workspace, the example patches will be available in `/Help/Import Tutorial Patches/Libraries/OM-Data`
 
+Updated content tree of the **OM-Data** library:
 ```.
 OM-Data
 ├── 1-Classification
@@ -77,12 +78,14 @@ OM-Data
 │   ├── Segment-seq
 │   ├── Extract-channel
 │   ├── Multi-join
+│   ├── Granulate
 │   └── Get-transients
 │
 └── 7-Other
     ├── L-system
     ├── 2D-Turtle
     ├── Make-sieve
+    ├── Recursivus
     └── Vieru-seq
 
  ```
