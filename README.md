@@ -13,7 +13,7 @@ For info on how to install external libraries in **OM** visit: https://support.i
 
 Once the library is installed and loaded into the **OM** workspace, the example patches will be available in `/Help/Import Tutorial Patches/Libraries/OM-Data`
 
-Updated content tree of the **OM-Data** library:
+Updated content tree of **OM-Data**:
 ```.
 OM-Data
 ├── 1-Classification
