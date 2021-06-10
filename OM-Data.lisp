@@ -61,7 +61,7 @@
             Deep-nth
             Deep-replace
             N-occurances
-            Unique-seq
+            Rep-filter
             Unique-scramble
             ) nil)
         ("4-Midicents" nil nil (

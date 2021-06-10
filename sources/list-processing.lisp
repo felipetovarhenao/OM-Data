@@ -395,15 +395,15 @@
                 (setq counter (+ counter (N-occurances x y))))))
     counter)
 
-;--------------- Unique-seq ---------------
-(defmethod! Unique-seq ((l list))
+;--------------- Rep-filter ---------------
+(defmethod! Rep-filter ((l list))
     :initvals '(((1 2) (3 3) (4 2) (4 2) (2 2) (2 2)))
     :indoc '("list")
     :icon 000
     :doc "Removes repetitions between consecutive elements.
 
     Example:
-    (unique-seq '((1 2) (3 3) (4 2) (4 2) (2 2) (2 2))) => ((1 2) (3 3) (4 2) (2 2))
+    (rep-filter '((1 2) (3 3) (4 2) (4 2) (2 2) (2 2))) => ((1 2) (3 3) (4 2) (2 2))
     "
     (setq output (list (car l)))
     (loop for x from 1 to (- (length l) 1) do

@@ -280,7 +280,6 @@
             (setq out (append out (list (list subm on subd subv subof subc dxo (length m)))))))
     out)
 
-
 ;--------------- Granulate ---------------
 (defmethod! Granulate ((self chord-seq) (output-dur number) grain-dur write-incr read-incr &optional (st-read-time '0) (dur-var '0) (write-incr-var '0) (read-incr-var '0) (vel-var '0) (read-mode 'linear))
     :initvals '(
