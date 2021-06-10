@@ -7,8 +7,6 @@
 
 (in-package :om)
 
-; (compile&load (om-relative-path '("sources") "OM-Data-functions" "omd-classification")) ; includes the functions in 'sources' folder
-
 (mapcar #'(lambda (file) (compile&load 
                         (make-pathname :directory (append (pathname-directory *load-pathname*) '("sources")) 
                                        :name file)))
@@ -99,9 +97,24 @@
     )
 )
 
+(doc-library "
+OM-Data is a library of elementary functions, partially aimed at data modelling and analysis in OpenMusic. The library includes functions for data metrics, classification, and processing, as well as some higher-level functions for specific musical operations.
+These include <i>K-means</i>, <i>DTW</i>, <i>NNS</i>, <i>KDTree</i>, <i>KNN</i>, <i>Markov-build</i>, <i>Markov-run</i>,  <i>Segment-seq</i>, <i>Score-filter</i>, <i>Get-transients</i>, <i>Chroma-count</i>, <i>IC-vector</i>, among many others.
+<br><br>
+A list of example patches are included, demonstrating possible musical applications for some of these functions.
+<br><br>
+Once the library is installed and loaded into the OM workspace, the example patches will be available in <i>/Help/Import Tutorial Patches/Libraries/OM-Data</i>
+<br><br>
+OM-Data is still in development.
+" 
+    (find-library "OM-Data"))
+
+(om::set-lib-release 1.0)
+
 (om-print "
 ***************************
-OM-Data library - 2021
+OM-Data library v1.0
 [www.felipe-tovar-henao.com]
+2021
 ***************************
 ")
