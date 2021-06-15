@@ -86,6 +86,7 @@
             Multi-join
             Get-transients
             Granulate
+            Harmonic-mapping
             ) nil)
         ("7-Miscellaneous" nil nil (
             L-system

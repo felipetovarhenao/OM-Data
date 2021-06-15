@@ -79,6 +79,7 @@ OM-Data
 │   ├── Extract-channel
 │   ├── Multi-join
 │   ├── Granulate
+│   ├── Harmonic-mapping
 │   └── Get-transients
 │
 └── 7-Other

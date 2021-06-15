@@ -379,4 +379,40 @@
         :lvel gr-vels
         :lchan (posn-match chans event-posn)))
 
-
+;--------------- Chord-seq->event-list ---------------
+(defmethod! Harmonic-mapping ((self chord-seq) (chords list) (time-pts list) &optional (accuracy 1.0) (octave-eq? t))
+    :initvals '(
+        (make-instance 'chord-seq 
+            :lmidic '((6550 6900 7275) (6300) (6100) (6000 6500 7300) (6550 6900 7275) (6300) (6000 6500 7300))
+            :lonset '(0 250 500 1000 1500 2000 2500 3000)
+            :ldur '(250))
+        ((6000 6400 6700) (5900 6200 6500 6700) (6000 6400 6800)) 
+        (0 1000 2000 3000)
+        1.0
+        t)
+    :indoc '("sequence" "list" "list" "number" "menu")
+    :icon 000
+    :menuins '((4 (("nil" nil) ("octave equivalence" t))))
+    :doc "Given a list of time points/markers (ms) and a list of target pitch collections/chords corresponding to those markers, pitches in the input chord-seq between those time points are snapped to the corresponding chords.
+    " 
+    (setq time-pts (list-frames time-pts 2))
+    (setq low-bound (+ 600 (list-min (lmidic self))))
+    (setq hi-bound (- (list-max (lmidic self)) 600))
+    (if octave-eq?
+        (setq chords (mapcar #'(lambda (input) (fill-range input low-bound hi-bound)) chords)))
+    (setq new-chords nil)
+    (loop for mc in (lmidic self) and onset in (lonset self) do
+        (setq new-mc (copy-tree mc))
+        (loop for tp in time-pts and ch in chords do
+            (if (and (>= onset (first tp)) (< onset (second tp)))
+                (setq new-mc (list-quantize mc ch accuracy))))
+        (setq new-chords (append new-chords (list new-mc))))
+    (make-instance 'chord-seq 
+        :lmidic new-chords
+        :lonset (lonset self)
+        :ldur (ldur self)
+        :lvel (lvel self)
+        :loffset (loffset self)
+        :lchan (lchan self)
+        :legato (legato self))
+)
