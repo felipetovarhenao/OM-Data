@@ -20,12 +20,13 @@
         (remove nil out)))
 
 (defun closest (a b-list)
-    (setq distances (loop for b in b-list and n from 0 to (- (length b-list) 1) collect 
-        (list (abs (- b a)) b n)))
-    (stable-sort distances #'< :key #'first)
-    (setq distances (car distances))
-    ; list of element and position
-    (list (second distances) (third distances)))
+    (let*
+        (
+            (distances (loop for b in b-list and n from 0 to (- (length b-list) 1) collect 
+                (list (abs (- b a)) b n)))            )
+        (stable-sort distances #'< :key #'first)
+        (setf distances (car distances))
+        (list (second distances) (third distances))))
 
 (defun depth (list)
     (if (listp list)

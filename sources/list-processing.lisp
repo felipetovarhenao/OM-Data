@@ -263,13 +263,15 @@
     Example:
     (list-mod '(-3 -2 -1 0 1 2 3) 2) => (-1 0 -1 0 1 0 1)
     "  
-    (setq output nil)
-    (loop for i in input-list collect
-        (setq output (append output (list
-            (cond 
-                ((< i 0) (* (mod (abs i) n) (/ i (abs i))))
-                ((>= i 0) (mod i n)))))))
-    output)
+    (let*   
+        (
+            (output nil))
+        (loop for i in input-list collect
+            (setf output (append output (list
+                (cond 
+                    ((< i 0) (* (mod (abs i) n) (/ i (abs i))))
+                    ((>= i 0) (mod i n)))))))
+        output))
 
 (defmethod! List-mod ((input-list list) (n list))
     (mapcar (lambda (input) 
@@ -329,39 +331,46 @@
 
 ;--------------- Deep-nth ---------------
 (defmethod! Deep-nth ((data list) (path list))
-    :initvals '((((0 1) (2 3)) ((4 5 6) (7 8 (9)))) (1 1 2))
+    :initvals '((((0 1) (2 3)) ((4 5 6) (7 8 ("nine")))) (1 1 2))
     :indoc '("list" "list")
     :icon 000
     :doc "Gets the nth element of a nested list, given a list of positions corresponding to each level in the input list."
-    (setq out nil)
-    (if (eq 1 (depth path))
-        (progn 
-            (loop for p in path do
-                (setq data (nth p data)))
-        data)
-        (mapcar #'(lambda (input) (deep-nth data input)) path)))
+    (let*
+        (
+            (out nil)
+        )
+        (if (eq 1 (depth path))
+            (progn 
+                (loop for p in path do
+                    (setf data (nth p data)))
+            data)
+            (mapcar #'(lambda (input) (deep-nth data input)) path))))
 
 ;--------------- Deep-replace ---------------
 (defmethod! Deep-replace ((data list) (path list) new)
-    :initvals '((((0 1) (2 3)) ((4 5 6) (7 8 (9)))) (1 1 2) "foo")
+    :initvals '((((0 1) (2 3)) ((4 5 6) (7 8 (9)))) (1 1 2) "nine")
     :indoc '("list" "list" "list or atom")
     :icon 000
     :doc "Replaces any element in a list with a new element, given a list of positions corresponding to each level in the input list."
-    (setq data-copy (copy-tree data))
-    (setq levels (list data-copy))
-    (loop for p in path do
-        (setq x (nth p data-copy))
-        (setq levels (append levels (list x)))
-        (setq data-copy x))
-    (setq levels (reverse levels))
-    (setq path (append (list 0) (reverse path)))
-    (setf (nth 0 levels) new)
-    (loop for p in path and l in levels and n from 0 to (length levels) do
-        (if (and (listp l) (> n 0))
-            (setf (nth p l) new)
-            (setq l new))
-        (setq new l))
-    (car (last levels)))
+    (let*
+        (
+            (data-copy (copy-tree data))
+            (levels (list data-copy)))
+        (loop for p in path do
+            (let*
+                (
+                    (x (nth p data-copy)))
+                (setf levels (append levels (list x)))
+                (setf data-copy x)))
+        (setf levels (reverse levels))
+        (setf path (append (list 0) (reverse path)))
+        (setf (nth 0 levels) new)
+        (loop for p in path and l in levels and n from 0 to (length levels) do
+            (if (and (listp l) (> n 0))
+                (setf (nth p l) new)
+                (setf l new))
+            (setf new l))
+        (car (last levels))))
 
 ;--------------- N-occurances ---------------
 (defmethod! N-occurances ((x number) (l list))
@@ -373,27 +382,31 @@
     Example:
     (n-occur 2 '(0 1 2 1 4 3 2 2)) => 3
     "
-    (setq counter 0)
-    (loop for y in l do
-        (if (numberp y)
-            (if (eq x y) 
-                (setq counter (+ counter 1)))
-            (setq counter (+ counter (N-occurances x y)))))
-    counter)
+    (let*
+        (
+            (counter 0))
+        (loop for y in l do
+            (if (numberp y)
+                (if (eq x y) 
+                    (setf counter (+ counter 1)))
+                (setf counter (+ counter (N-occurances x y)))))
+        counter))
 
 (defmethod! N-occurances ((x list) (l list))
-    (setq counter 0)
-    (loop for y in l do
-        (cond 
-            (
-                (eq (depth y) (depth x))
-                (if 
-                    (equal x y) 
-                    (setq counter (+ counter 1))))
-            (
-                (> (depth y) (depth x))
-                (setq counter (+ counter (N-occurances x y))))))
-    counter)
+    (let*
+        (
+            (counter 0))
+        (loop for y in l do
+            (cond 
+                (
+                    (eq (depth y) (depth x))
+                    (if 
+                        (equal x y) 
+                        (setf counter (+ counter 1))))
+                (
+                    (> (depth y) (depth x))
+                    (setf counter (+ counter (N-occurances x y))))))
+        counter))
 
 ;--------------- Rep-filter ---------------
 (defmethod! Rep-filter ((l list))
@@ -405,11 +418,13 @@
     Example:
     (rep-filter '((1 2) (3 3) (4 2) (4 2) (2 2) (2 2))) => ((1 2) (3 3) (4 2) (2 2))
     "
-    (setq output (list (car l)))
-    (loop for x from 1 to (- (length l) 1) do
-        (if (not (equal (nth x l) (nth (- x 1) l)))
-            (setq output (append output (list (nth x l))))))
-    output)
+    (let*
+        (
+            (output (list (car l))))
+        (loop for x from 1 to (- (length l) 1) do
+            (if (not (equal (nth x l) (nth (- x 1) l)))
+                (setf output (append output (list (nth x l))))))
+        output))
 
 ;--------------- Unique-scramble ---------------
 (defmethod! Unique-scramble ((a-list list) (times integer))
@@ -421,20 +436,27 @@
     Example:
     (unique-scramble '(0 1 2) 4) => ((0 1 2) (2 0 1) (1 2 0) (0 1 2))
     "
-    (setq out (list a-list))
-    (setq current (copy-tree a-list))
-    (loop for i from 1 to (- times 1) do
-        (setq unique nil)
-        (while (eq unique nil)
-            (setq dups 0)
-            (setq scrambled (permut-random current))
-            (loop for c in current and s in scrambled do
-                (if (eq c s)
-                    (setq dups (+ dups 1))))
-            (if (eq dups 0)
-                (setq unique t)))
-        (setq out (append out (list scrambled)))
-        (setq current (copy-tree scrambled)))
-    out)
+    (let*
+        (
+            (out (list a-list))
+            (current (copy-tree a-list)))
+        (loop for i from 1 to (- times 1) do
+            (let*
+                (
+                    (unique nil)
+                    (scrambled nil))
+                (while (eq unique nil)
+                    (let*
+                        (
+                            (dups 0))
+                        (setf scrambled (permut-random current))
+                        (loop for c in current and s in scrambled do
+                            (if (eq c s)
+                                (setf dups (+ dups 1))))
+                        (if (eq dups 0)
+                            (setf unique t))))
+                (setf out (append out (list scrambled)))
+                (setf current (copy-tree scrambled))))
+        out))
 
 
