@@ -35,7 +35,6 @@ OM-Data
 │   ├── List-Zscore
 │   ├── List-covariance
 │   ├── List-correlation
-│   ├── List-Histogram
 │   └── Plot-points
 │
 ├── 3-List-processing

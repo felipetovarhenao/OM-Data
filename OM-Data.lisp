@@ -41,7 +41,6 @@
             List-Zscore
             List-covariance
             List-correlation
-            Histogram
             Plot-points
             ) nil)
         ("3-List processing" nil nil (
