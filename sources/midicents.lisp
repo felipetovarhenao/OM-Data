@@ -223,20 +223,24 @@
     Example:
     (ic-vector '(6000 6400 6700 7000 7200)) => (0 2 2 2 2 1)
     "
-    (if (and (eq (depth mc) 1) (> (length mc) 1))
-        (progn 
-            (setq icv (repeat-n 0 7))
-            (setq times 0)
-            (setq pc-list (om-round (om/ (List-mod mc 1200) 100) 1))
-            (loop for pc in pc-list do   
-                (loop for x from times to (- (length mc) 1) do
-                    (setq interval (abs (- (nth x pc-list) pc)))
-                    (setq posn (List-fold (nth-value 0 (round interval)) 0 6))
-                    (setf (nth posn icv) (+ (nth posn icv) 1)))
-                (setq times (+ times 1)))
-            (cdr icv))
-        (mapcar #'(lambda (input) (IC-vector input)) mc)))
-
+    (let* ()
+        (if (and (eq (depth mc) 1) (> (length mc) 1))
+            (progn 
+                (let* 
+                    (
+                        (icv (repeat-n 0 7))
+                        (times 0)
+                        (pc-list (om-round (om/ (List-mod mc 1200) 100) 1)))
+                    (loop for pc in pc-list do   
+                        (loop for x from times to (- (length mc) 1) do
+                            (let*
+                                (
+                                    (interval (abs (- (nth x pc-list) pc)))
+                                    (posn (List-fold (nth-value 0 (round interval)) 0 6)))
+                                (setf (nth posn icv) (+ (nth posn icv) 1))))
+                        (setf times (+ times 1)))
+                    (cdr icv)))
+            (mapcar #'(lambda (input) (IC-vector input)) mc))))
 
 ;--------------- Mc-clip ---------------
 (defmethod! Mc-clip ((mc number) (lower-bound number) (upper-bound number))
@@ -248,17 +252,19 @@
     Example: 
     (mc-clip 5500 6000 7200) => 6700
     "
-    (setq lowdif (- 1200 (mod (abs (- lower-bound mc)) 1200)))
-    (setq hidif (- 1200 (mod (abs (- upper-bound mc)) 1200)))
-    (setq out mc)
-    (cond
+    (let* 
         (
-            (< mc lower-bound)
-            (setq out (+ lower-bound lowdif)))
-        (
-            (>= mc upper-bound)
-            (setq out (- upper-bound hidif))))
-    out)
+            (lowdif (- 1200 (mod (abs (- lower-bound mc)) 1200)))
+            (hidif (- 1200 (mod (abs (- upper-bound mc)) 1200)))
+            (out mc))
+        (cond
+            (
+                (< mc lower-bound)
+                (setf out (+ lower-bound lowdif)))
+            (
+                (>= mc upper-bound)
+                (setf out (- upper-bound hidif))))
+        out))
 
 (defmethod! Mc-clip ((mc-list list) (lower-bound number) (upper-bound number))
     (mapcar #'(lambda (input) (Mc-clip input lower-bound upper-bound)) mc-list))
@@ -273,19 +279,21 @@
     Example: 
     (mc-wrap 5900 6000 7200) => 7100
     "
-    (setq range (abs (- upper-bound lower-bound)))
-    (setq oct-offset (* 1200 (nth-value 0 (floor lower-bound 1200))))
-    (setq oct-range (* 1200 (nth-value 0 (ceiling range 1200))))
-    (setq oct-range-floor (* 1200 (nth-value 0 (floor range 1200))))
-    (setq mc (+ oct-offset (abs (nth-value 1 (om// (- mc oct-offset) oct-range)))))
-    (cond 
-        (  
-            (< mc lower-bound)
-            (setq mc (+ mc oct-range-floor)))
+    (let*
         (
-            (> mc upper-bound)
-            (setq mc (- mc oct-range-floor))))
-    mc)
+            (range (abs (- upper-bound lower-bound)))
+            (oct-offset (* 1200 (nth-value 0 (floor lower-bound 1200))))
+            (oct-range (* 1200 (nth-value 0 (ceiling range 1200))))
+            (oct-range-floor (* 1200 (nth-value 0 (floor range 1200)))))
+        (setf mc (+ oct-offset (abs (nth-value 1 (om// (- mc oct-offset) oct-range)))))
+        (cond 
+            (  
+                (< mc lower-bound)
+                (setf mc (+ mc oct-range-floor)))
+            (
+                (> mc upper-bound)
+                (setf mc (- mc oct-range-floor))))
+        mc))
 
 (defmethod! Mc-wrap ((mc-list list) (lower-bound number) (upper-bound number))
     (mapcar #'(lambda (input) (Mc-wrap input lower-bound upper-bound)) mc-list))
@@ -300,20 +308,23 @@
     Example:
     (ic-cycle 6300 '(500 200) 6000 6700 5) => (6300 6800 7000 6300 6500)
     "
-    (setq out nil)  
-    (loop for x from 0 to (- n-times 1) collect
-        (setq out (append out (list (+ mc-start (* x ic)))))
-    )
-    (mc-wrap out lower-bound upper-bound))
+    (let*
+        (
+            (out nil))  
+        (loop for x from 0 to (- n-times 1) collect
+            (setf out (append out (list (+ mc-start (* x ic))))))
+        (mc-wrap out lower-bound upper-bound)))
 
 (defmethod! Ic-cycle ((mc-start number) (ic list) (lower-bound number) (upper-bound number) (n-times number))
-    (setq out (list mc-start))  
-    (loop for x from 0 to (- n-times 2) collect
-        (if (eq (depth ic) 1)
-            (progn 
-                (setq mc-start (+ mc-start (nth (mod x (length ic)) ic)))
-                (setq out (append out (list mc-start))))))
-    (mc-wrap out lower-bound upper-bound))
+    (let*
+        (
+            (out (list mc-start)))
+        (loop for x from 0 to (- n-times 2) collect
+            (if (eq (depth ic) 1)
+                (progn 
+                    (setf mc-start (+ mc-start (nth (mod x (length ic)) ic)))
+                    (setf out (append out (list mc-start))))))
+        (mc-wrap out lower-bound upper-bound)))
 
 (defmethod! Harmonic-distr ((mc-list list) (mc-fund number) (max-dist integer) &optional (mode '0))
     :initvals '((6000 6300 6700 7200) 4500 200 0)
@@ -322,26 +333,220 @@
     :icon 000
     :doc "Re-distributes a list of midicents in register, such that it resembles a harmonic series of a given (virtual) fundamental.
     "
-    (if (< max-dist 15)
-        (setq max-dist 15))
-    (setq f0 (mc->f mc-fund))
-    (setq pcs (nth-value 1 (om// mc-list 1200)))
-    (setq p-index 1)
-    (setq out nil)
-    (while (> (length pcs) 0)
-        (setq partial (f->mc (* f0 p-index)))
-        (setq pool (fill-range pcs (- partial 600) (+ partial 600)))
-        (setq closest-elem (car (closest partial pool)))
-        (setq dist (abs (- partial closest-elem)))
-        (if (< dist max-dist)
-            (progn 
-                (setq out (append out (list closest-elem)))
-                (setq pc (nth-value 1 (om// closest-elem 1200)))
-                (setq pcs (remove pc pcs :count 1))))
-        (setq p-index (+ p-index 1)))
-    (if (equal mode '1)
-        (setq out (append (list mc-fund) out)))
-    out)
+    (let* ()   
+        (if (< max-dist 15)
+            (setf max-dist 15))
+        (let*
+            (
+                (f0 (mc->f mc-fund))
+                (pcs (nth-value 1 (om// mc-list 1200)))
+                (p-index 1)
+                (out nil))
+            (while (> (length pcs) 0)
+                (let*
+                    (
+                        (partial (f->mc (* f0 p-index)))
+                        (pool (fill-range pcs (- partial 600) (+ partial 600)))
+                        (closest-elem (car (closest partial pool)))
+                        (dist (abs (- partial closest-elem))))
+                    (if (< dist max-dist)
+                        (progn 
+                            (let* 
+                                (
+                                    (pc (nth-value 1 (om// closest-elem 1200))))
+                                (setf pcs (remove pc pcs :count 1))
+                                (setf out (append out (list closest-elem))))))
+                    (setf p-index (+ p-index 1))))
+            (if (equal mode '1)
+                (setf out (append (list mc-fund) out)))
+            out)))
+
+;--------------- Voice-leading functions ---------------
+(defun connect-chords (chord-a chord-b punish-intervals)
+    (let*
+        (
+            (pc-a (nth-value 1 (om// chord-a 1200)))
+            (pc-b (nth-value 1 (om// chord-b 1200)))
+            (chord-a (sort-list chord-a))
+            (chord-b (sort-list chord-b))
+            (dxmaster nil))
+        (let*
+            (
+                (same? (and (equal nil (x-diff pc-a pc-b)) (equal nil (x-diff pc-b pc-a)))))
+            (if same?
+                chord-a
+                (progn 
+                    (loop for a in pc-a and x from (- (length pc-a) 1) do
+                        (let* 
+                            (
+                                (dx nil))
+                            (loop for b in pc-b and y from (- (length pc-b) 1) do
+                                (let*
+                                    (
+                                        (dx1 (- b a))
+                                        (dx2 (- (+ b 1200) a))
+                                        (dx3 (- (- b 1200) a))
+                                        (dxlist (list dx1 dx2 dx3))
+                                        (absdx (om-abs dxlist))
+                                        (mindx (list-min absdx)))
+                                    (setf dx (append dx (list (posn-match dxlist (get-posn mindx absdx)))))))
+                            (setf dxmaster (append dxmaster (list (flat dx))))))
+                    (let* 
+                        (
+                            (transformations (apply #'combinations dxmaster))
+                            (options nil))
+                        (loop for tr in transformations do
+                            (let* 
+                                (
+                                    (candidate (sort-list (om+ chord-a tr)))
+                                    (pc-cand (nth-value 1 (om// candidate 1200)))
+                                    (member? nil)
+                                    (edit-cost 0)
+                                    (parallel-cost 0)
+                                    (mov-cost (* 0.5 (motion-cost tr)))
+                                    (spread-cost 0)
+                                    (opt nil)
+                                )
+                                (if (equal nil (x-diff pc-b pc-cand))
+                                    (progn 
+                                        (setf edit-cost (ghisi-edit-distance candidate chord-a))
+                                        (setf spread-cost (* 1/3 (span-cost candidate chord-a)))
+                                        (setf parallel-cost (* 1/2 (reduce #'+ (parallelisms chord-a candidate punish-intervals))))
+                                        (setf opt (list candidate (+ spread-cost mov-cost parallel-cost edit-cost)))
+                                        (setf member? (equal nil (member opt options :test 'equal)))
+                                        (if member?
+                                            (setf options (append options (list opt))))))))
+                        (stable-sort options #'< :key 'second)
+                        (caar (mat-trans options))))))))
+
+(defun combinations (&rest lists)
+    (if (endp lists)
+        (list nil)
+        (mapcan 
+            (lambda (inner-val) 
+                (mapcar (lambda (outer-val) (cons outer-val inner-val))
+                    (car lists)))
+            (apply #'combinations (cdr lists)))))
+
+(defun get-duplicates (l)
+    (let* 
+        (
+            (thin-l (remove-dup l 'equal 1))
+            (output nil))
+        (loop for x in thin-l do
+            (let* 
+                (
+                    (elems (posn-match l (get-posn x l)))
+                )
+                (if (> (length elems) 1)
+                    (setf output (append output (list elems))))))
+        output))
+
+(defun ghisi-edit-distance (a b)
+    (let* 
+        (
+            (pc-a (remove-dup (nth-value 1 (om// a 1200)) 'equal 1))
+            (pc-b (remove-dup (nth-value 1 (om// b 1200)) 'equal 1))
+            (common (length (x-intersect a b)))
+            (largest (max (length b) (length b)))
+            (cost-a (* 1/12 (- largest common)))
+            (pc-a-size (length pc-a))
+            (pc-b-size (length pc-b))
+            (cost-b (- (max pc-a-size pc-b-size) (length (x-intersect pc-a pc-b)))))
+        (+ cost-a cost-b)))
+
+(defun parallelisms (chord-a chord-b mcdx)
+    (let* ()
+        (if (atom mcdx)
+            (setf mcdx (list mcdx)))
+        (let* 
+            (
+                (voices (mat-trans (list chord-a chord-b)))
+                (numvoices (length voices))
+                (output (repeat-n 0 (length mcdx))))
+            (loop for x from 0 to (- numvoices 1) do
+                (let* 
+                    (  
+                        (a (nth x voices)))   
+                    (loop for y from (+ x 1) to (- numvoices 1) do    
+                        (let* 
+                            (
+                                (b (nth y voices))
+                                (dx (nth-value 1 (om// (om- b a) 1200)))
+                                (parallel? (equal (first dx) (second dx)))
+                            )
+                            (if parallel?
+                                (loop for z in mcdx and k from 0 to (- (length mcdx) 1) do
+                                    (if (equal (first dx) z)
+                                        (setf (nth k output) (+ (nth k output) 1))
+                                    )
+                                )
+                            )
+                        )
+                    )
+                )
+            )
+            output)
+    )
+)
+
+(defun motion-cost (dx)
+    (let*
+        (
+            (netdx (/ (abs (reduce #'+ dx)) 100))
+            (common (n-occurances 0 dx)))
+        (/ netdx (max common 1))))
+
+(defun span-cost (a b)
+    (let*
+        (
+            (span-a (- (list-max a) (list-min a)))
+            (span-b (- (list-max b) (list-min b))))
+        (/ (abs (- span-a span-b)) 1200)))
+
+;--------------- Voice-leading methods ---------------
+(defmethod! Voice-leading ((st-chord list) (other-chords list) &optional (punish-intervals '(0 700)))
+    :initvals '((4800 5500 6000 6400 7100) ((200 500 900) (0 500 900) (200 500 700 1100) (0 400)) (0 700))
+    :indoc '("list" "list" "list")
+    :icon 000
+    :doc "Voice leading
+    "
+    (let* 
+        (
+            (a (sort-list st-chord))
+            (output nil))
+        (loop for b in other-chords do
+            (let* 
+                (
+                    (size-a (length a))
+                    (size-b (length b))
+                    (largest (max size-a size-b))
+                    (new nil))
+                (setf b (sort-list b))
+                (cond
+                    (
+                        (> size-a size-b)
+                        (setf b (iterate-list (remove nil (flat (mat-trans (pc-group b)))) largest)))
+                    (
+                        (> size-b size-a)
+                        (setf a (iterate-list (remove nil (flat (mat-trans (pc-group a)))) largest))))
+                (setf new (connect-chords a b punish-intervals))
+                (setf output (append output (list (remove-dup new 'equal 1))))
+                (setf a new)))
+        (append (list st-chord) output)))
+
+(defun pc-group (l)
+    (let*
+        (
+            (pc-list (nth-value 1 (om// l 1200)))
+            (unique-pc (remove-dup pc-list 'equal 1))
+            (out (repeat-n nil (length unique-pc)))
+            (pos nil))
+        (loop for p in l and pc in pc-list do
+            (setf pos (position pc unique-pc :test 'equal))
+            (setf (nth pos out) (append (nth pos out) (list p))))
+        out))
+
 
 
 

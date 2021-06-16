@@ -9,13 +9,15 @@
 
 ; -------------- (UNLISTED) FUNCTIONS -------------------
 (defun get-posn (n source)
-    (setq i 0)
-    (setq out nil)
-    (while (< i (length source))
-        (if (equal (nth i source) n)
-            (setq out (flat (list out i))))
-        (setq i (+ i 1)))
-    (remove nil out))
+    (let*
+        (
+            (i 0)
+            (out nil))
+        (while (< i (length source))
+            (if (equal (nth i source) n)
+                (setf out (flat (list out i))))
+            (setf i (+ i 1)))
+        (remove nil out)))
 
 (defun closest (a b-list)
     (setq distances (loop for b in b-list and n from 0 to (- (length b-list) 1) collect 

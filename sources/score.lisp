@@ -396,8 +396,8 @@
     :doc "Given a list of time points/markers (ms) and a list of target pitch collections/chords corresponding to those markers, pitches in the input chord-seq between those time points are snapped to the corresponding chords.
     " 
     (setq time-pts (list-frames time-pts 2))
-    (setq low-bound (+ 600 (list-min (lmidic self))))
-    (setq hi-bound (- (list-max (lmidic self)) 600))
+    (setq low-bound (- (list-min (lmidic self)) 600))
+    (setq hi-bound (+ (list-max (lmidic self)) 600))
     (if octave-eq?
         (setq chords (mapcar #'(lambda (input) (fill-range input low-bound hi-bound)) chords)))
     (setq new-chords nil)
