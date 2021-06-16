@@ -60,7 +60,6 @@
         (if (eq (depth data) 1)
             (if (> (length data) 1)
                 (progn 
-                    (setf skewness nil) (setq kurtosis nil)
                     (setf mean (/ (reduce #'+ data) (* 1.0 (length data))))
                     (setf st-dev (sqrt 
                         (/ (reduce #'+ 

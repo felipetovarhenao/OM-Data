@@ -389,7 +389,7 @@
                         (progn
                             (setf rep iterations)
                             (om-print "MARKOV-RUN => Sequence reached dead end before desired length"))
-                        (setq current-state (nth-random states))))))
+                        (setf current-state (nth-random states))))))
         output))
 
 ; --------------- Optimal-sorting ---------------
