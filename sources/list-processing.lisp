@@ -19,32 +19,42 @@
 
     List A and B do not need to have the same length, but list-b must be of depth 1. List A can be a nested list.
     "
-    (stable-sort b-list #'<)
-    (setq numpts (length a-list))
-    (setq traj (om/ traj (list-max (om-abs traj))))
-    (setq traj (om-clip traj 0.0 1.0))
-    (setq interp-pts (nth-value 2 (om-sample traj numpts)))
-    (setq a-table (remove-dup (flat (copy-tree a-list)) 'eq 1))
-    (stable-sort a-table #'<)
-    (setq ab-matrix nil)
-    (loop for a in a-table do 
-        (setq b-target (closest a b-list))
-        (setq ab-matrix (append ab-matrix (list (list a (car b-target))))))
-    (setq ab-positions (Nested-position a-list (first (mat-trans ab-matrix))))
-    (setq nested-target (Nested-nth ab-positions (second (mat-trans ab-matrix))))
-    (loop for a in a-list and nt in nested-target and f in interp-pts collect
-        (nested-mix a nt f)))  
+    (let*
+        (
+            (numpts (length a-list))
+            (traj (om/ traj (list-max (om-abs traj))))
+            (a-table (remove-dup (flat (copy-tree a-list)) 'eq 1)))
+        (setf traj (om-clip traj 0.0 1.0))
+        (let*
+            (
+                (interp-pts (nth-value 2 (om-sample traj numpts)))
+                (ab-matrix nil)
+                (ab-positions nil)
+                (nested-target nil))
+            (stable-sort a-table #'<)
+            (stable-sort b-list #'<)
+            (loop for a in a-table do 
+                (let*
+                    (
+                        (b-target (closest a b-list)))
+                    (setf ab-matrix (append ab-matrix (list (list a (car b-target)))))))
+            (setf ab-positions (Nested-position a-list (first (mat-trans ab-matrix))))
+            (setf nested-target (Nested-nth ab-positions (second (mat-trans ab-matrix))))
+            (loop for a in a-list and nt in nested-target and f in interp-pts collect
+                (nested-mix a nt f)))))  
 
 (defmethod! X-interpolation ((a-list chord-seq) (b-list list) (traj list))
-    (setq mc (lmidic a-list))
-    (setq mc (om-round (x-interpolation mc b-list traj)))
-    (make-instance 'chord-seq 
-        :lmidic mc
-        :lonset (lonset a-list)
-        :ldur (ldur a-list)
-        :lvel (lvel a-list)
-        :loffset (loffset a-list)
-        :lchan (lchan a-list)))
+    (let*
+        (
+            (mc (lmidic a-list)))
+        (setf mc (om-round (x-interpolation mc b-list traj)))
+        (make-instance 'chord-seq 
+            :lmidic mc
+            :lonset (lonset a-list)
+            :ldur (ldur a-list)
+            :lvel (lvel a-list)
+            :loffset (loffset a-list)
+            :lchan (lchan a-list))))
 
 ; --------------- Posn-map ---------------
 (defmethod! Posn-map ((l list))
@@ -56,14 +66,16 @@
     Example:
     (posn-map '((0 0) (0 1) (1 0) (1 0) (0 0) (1 1))) => (0 1 2 2 0 3)
     " 
-    (setq thin-l nil)
-    (setq out nil)
-    (loop for x in l do
-        (cond (
-            (equal (member x thin-l :test 'equal) nil) 
-            (setq thin-l (append thin-l (list x)))))
-        (setq out (append out (list (position x thin-l :test 'equal))))) 
-    out)
+    (let*
+        (
+            (thin-l nil)
+            (out nil))
+        (loop for x in l do
+            (cond (
+                (equal (member x thin-l :test 'equal) nil) 
+                (setf thin-l (append thin-l (list x)))))
+            (setf out (append out (list (position x thin-l :test 'equal))))) 
+        out))
 
 ; --------------- Pick-random ---------------
 (defmethod! Pick-random ((in-list list) (weights list) (times integer))
@@ -75,25 +87,30 @@
     Example:
     (pick-random '((1 1 1) (2 2 2) (3 3 3) (4 4 4)) '(1 2 3 4) 3) => ((4 4 4) (4 4 4) (4 4 4))
     "
-    (if (equal weights nil)
-        (setq weights (repeat-n 1 (length in-list)))
-    )
-    (setq sum-w (reduce-tree weights #'+))
-    (setq out nil)
-
-    (loop for n from 1 to times do
-        (setq rand (random (* 1.0 sum-w)))
-        (setq stop nil)
-        (setq index 0)
-        (while (and (eq stop nil) (< index (length weights)))
-            (setq w (nth index weights))
-            (if (< rand w)
-                (progn 
-                    (setq out (append out (list (nth index in-list))))
-                    (setq stop t)))
-            (setq rand (- rand w))
-            (setq index (+ index 1))))
-    out)
+    (let*
+        (
+            (out nil)
+            (sum-w nil))
+        (if (equal weights nil)
+            (setf weights (repeat-n 1 (length in-list))))
+        (setf sum-w (reduce-tree weights #'+))
+        (loop for n from 1 to times do
+            (let*
+                (
+                    (rand (random (* 1.0 sum-w)))
+                    (stop nil)
+                    (index 0))
+                (while (and (eq stop nil) (< index (length weights)))
+                    (let*
+                        (
+                            (w (nth index weights)))
+                        (if (< rand w)
+                            (progn 
+                                (setf out (append out (list (nth index in-list))))
+                                (setf stop t)))
+                        (setf rand (- rand w))
+                        (setf index (+ index 1))))))
+        out))
 
 ;--------------- List-wrap---------------
 (defmethod! List-wrap ((val number) (lower-bound number) (upper-bound number))
@@ -104,21 +121,24 @@
     
     Example:
     (list-wrap '(-2 -1 0 1 2 3 4 5 6) 0 3) => (1 2 0 1 2 0 1 2 0)
-    "
-    (setq range (abs (- upper-bound lower-bound)))
-    (setq out val)
-    (cond
+    "   
+    (let*
         (
-            (< val lower-bound)
-            (progn
-                (setq diff (mod (abs (- lower-bound val)) range))
-                (setq out (- upper-bound diff))))
-        (
-            (>= val upper-bound)
-            (progn
-                (setq diff (mod (abs (- upper-bound val)) range))
-                (setq out (+ lower-bound diff)))))
-    out)
+            (range (abs (- upper-bound lower-bound)))
+            (out val)
+            (diff nil))
+        (cond
+            (
+                (< val lower-bound)
+                (progn
+                    (setf diff (mod (abs (- lower-bound val)) range))
+                    (setf out (- upper-bound diff))))
+            (
+                (>= val upper-bound)
+                (progn
+                    (setf diff (mod (abs (- upper-bound val)) range))
+                    (setf out (+ lower-bound diff)))))
+        out))
 
 (defmethod! List-wrap ((val list) (lower-bound number) (upper-bound number))
     (mapcar #'(lambda (input) (List-wrap input lower-bound upper-bound)) val))
@@ -133,26 +153,31 @@
     Example:
     (list-fold '(-2 -1 0 1 2 3 4 5 6) 0 3) => (2 1 0 1 2 3 2 1 0)
     "
-    (setq range (abs (- upper-bound lower-bound)))
-    (setq out val)
-    (cond
+    (let* 
         (
-            (< val lower-bound)
-            (setq diff (abs (- lower-bound val)))
-            (setq mode (evenp (nth-value 0 (om// diff range))))
-            (setq diff (mod diff range))
-            (if (eq mode t)
-                (setq out (+ lower-bound diff))
-                (setq out (- upper-bound diff))))
-        (
-            (>= val upper-bound)
-            (setq diff (abs (- upper-bound val)))
-            (setq mode (evenp (nth-value 0 (om// diff range))))
-            (setq diff (mod diff range))
-            (if (eq mode t)
-                (setq out (- upper-bound diff))
-                (setq out (+ lower-bound diff)))))
-    out)
+            (range (abs (- upper-bound lower-bound)))
+            (out val)
+            (diff nil)
+            (mode nil)
+        )
+        (cond
+            (
+                (< val lower-bound)
+                (setf diff (abs (- lower-bound val)))
+                (setf mode (evenp (nth-value 0 (om// diff range))))
+                (setf diff (mod diff range))
+                (if (eq mode t)
+                    (setf out (+ lower-bound diff))
+                    (setf out (- upper-bound diff))))
+            (
+                (>= val upper-bound)
+                (setf diff (abs (- upper-bound val)))
+                (setf mode (evenp (nth-value 0 (om// diff range))))
+                (setf diff (mod diff range))
+                (if (eq mode t)
+                    (setf out (- upper-bound diff))
+                    (setf out (+ lower-bound diff)))))
+        out))
 
 (defmethod! List-fold ((val list) (lower-bound number) (upper-bound number))
     (mapcar #'(lambda (input) (List-fold input lower-bound upper-bound)) val))
@@ -170,30 +195,40 @@
     Examples:
     (List-symmetries '(3 1 1 3 2 1 1 2) 'rotations 0.0) => [ ((1 3 2 1 1 2 3 1) (1 2 3 1 1 3 2 1)) (0 0) ]
     (List-symmetries '(3 2 3 2 1) 'permutations 0.0) => [ ((3 2 1 2 3) (2 3 1 3 2)) (0 0) ]"
-    (if (> tolerance 0.0)
-        (progn 
-            (setq sorted-list (sort-list in-list))
-            (setq maxdist (reduce-tree (om-abs (om- sorted-list (reverse sorted-list))) #'+))))
-    (cond 
+    (let*
         (
-            (equal mode 'rotations)
-            (setq forms (loop for n from 0 to (- (length in-list) 1) collect (rotate in-list n))))
-        (
-            (equal mode 'permutations)
-            (setq forms (remove-dup (permutations in-list) 'equal 1))))
-    (setq out nil)
-    (loop for f in forms do
-        (setq rf (reverse f))
+            (maxdist nil)
+            (forms nil)
+            (out nil))
         (if (> tolerance 0.0)
             (progn 
-                (setq dist (/ (reduce-tree (om-abs (om- rf f))  #'+) maxdist))
-                (if (<= dist tolerance)
-                    (setq out (append out (list (list f dist))))))
-            (if (equal f rf)
-                (setq out (append out (list (list f 0)))))))
-    (stable-sort out #'< :key 'second)
-    (setq out (mat-trans out))
-    (values-list (list (first out) (second out))))
+                (let*
+                    (
+                        (sorted-list (sort-list in-list))
+                    )
+                    (setf maxdist (reduce-tree (om-abs (om- sorted-list (reverse sorted-list))) #'+)))))
+        (cond 
+            (
+                (equal mode 'rotations)
+                (setf forms (loop for n from 0 to (- (length in-list) 1) collect (rotate in-list n))))
+            (
+                (equal mode 'permutations)
+                (setf forms (remove-dup (permutations in-list) 'equal 1))))
+        (loop for f in forms do
+            (let*
+                (
+                    (rf (reverse f))
+                    (dist nil))
+                (if (> tolerance 0.0)
+                    (progn 
+                        (setf dist (/ (reduce-tree (om-abs (om- rf f))  #'+) maxdist))
+                        (if (<= dist tolerance)
+                            (setf out (append out (list (list f dist))))))
+                    (if (equal f rf)
+                        (setf out (append out (list (list f 0))))))))
+        (stable-sort out #'< :key 'second)
+        (setf out (mat-trans out))
+        (values-list (list (first out) (second out)))))
 
 ;--------------- List-frames ---------------
 (defmethod! List-frames ((in-list list) (size integer) &optional (hop 1))
@@ -207,14 +242,16 @@
     (list-frames '(0 1 2 3 4 5 6) 2 1)  =>  ((0 1) (1 2) (2 3) (3 4) (4 5) (5 6))
     (list-frames '(0 1 2 3 4 5 6) 2 2)  =>  ((0 1) (2 3) (4 5))
     "
-    (setq indices (arithm-ser 0 (- size 1) 1))
-    (setq x 0)
-    (setq out nil)
-    (setq max-index (- (+ (length in-list) 1) size))
-    (while (< x max-index)
-        (setq out (append out (list (posn-match in-list (om+ indices x) ))))
-        (setq x (+ x (max 1 hop))))
-    out)
+    (let*
+        (
+            (indices (arithm-ser 0 (- size 1) 1))
+            (x 0)
+            (out nil)
+            (max-index (- (+ (length in-list) 1) size)))
+        (while (< x max-index)
+            (setf out (append out (list (posn-match in-list (om+ indices x) ))))
+            (setf x (+ x (max 1 hop))))
+        out))
 
 ; --------------- List-quantize ---------------
 (defmethod! List-quantize ((a number) (b-list list) (accuracy number))
@@ -227,31 +264,35 @@
     (list-quantize '(2.5 4.03) '(0 1 2 3 4 5 6) 0.5) => (2.25 4.0150004)
     (list-quantize '(2.5 4.03) '(0 1 2 3 4 5 6) 1.0) => (2.0 4.0)
     " 
-    (if (equal accuracy nil)
-        (setq accuracy 1.0))
-    (setq accuracy (clip accuracy 0 1))
-    (setq distances nil)
-    (loop for b in b-list collect
-        (setq distances (append distances (list (abs (- b a))))))
-    (setq sorted-distances (copy-tree distances))
-    (stable-sort sorted-distances #'<)
-    (+ (* accuracy (nth (nth 0 (get-posn (car sorted-distances) distances)) b-list)) (* a (- 1 accuracy))))
+    (let* 
+        (
+            (distances nil))
+        (if (equal accuracy nil)
+            (setf accuracy 1.0))
+        (setf accuracy (clip accuracy 0 1))
+        (loop for b in b-list collect
+            (setf distances (append distances (list (abs (- b a))))))
+        (setf sorted-distances (copy-tree distances))
+        (stable-sort sorted-distances #'<)
+        (+ (* accuracy (nth (nth 0 (get-posn (car sorted-distances) distances)) b-list)) (* a (- 1 accuracy)))))
 
 (defmethod! List-quantize ((a-list list) (b-list list) (accuracy number))
     (mapcar #'(lambda (input) 
         (List-quantize input b-list accuracy)) a-list))
 
 (defmethod! List-quantize ((a-list chord-seq) (b-list list) (accuracy number))
-    (setq mc (lmidic a-list))
-    (setq mc (mapcar #'(lambda (input) 
-        (List-quantize input b-list accuracy)) mc))
-    (make-instance 'chord-seq 
-        :lmidic mc
-        :lonset (lonset a-list)
-        :ldur (ldur a-list)
-        :lvel (lvel a-list)
-        :loffset (loffset a-list)
-        :lchan (lchan a-list)))
+    (let*
+        (
+            (mc (lmidic a-list)))
+        (setf mc (mapcar #'(lambda (input) 
+            (List-quantize input b-list accuracy)) mc))
+        (make-instance 'chord-seq 
+            :lmidic mc
+            :lonset (lonset a-list)
+            :ldur (ldur a-list)
+            :lvel (lvel a-list)
+            :loffset (loffset a-list)
+            :lchan (lchan a-list))))
 
 ; --------------- List-mod ---------------
 (defmethod! List-mod ((input-list list) (n number))

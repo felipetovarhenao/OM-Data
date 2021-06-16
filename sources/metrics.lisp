@@ -175,7 +175,7 @@
             (if (and (>= d lower) (< d upper))
                 (setq counter (+ counter 1))))
         (setq histo (append histo (list (om-make-point lower counter)))))
-    (make-instance 'bpf :point-list histo :decimal 2))
+    (make-instance 'bpf :point-list histo :decimals 1))
 
 ;--------------- Plot-points ---------------
 (defmethod! Plot-points ((points list))
