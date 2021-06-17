@@ -433,7 +433,7 @@
                                     (member? nil)
                                     (edit-cost 0)
                                     (parallel-cost 0)
-                                    (mov-cost (* 0.5 (motion-cost tr)))
+                                    (mov-cost 0)
                                     (spread-cost 0)
                                     (opt nil)
                                 )
@@ -441,7 +441,8 @@
                                     (progn 
                                         (setf edit-cost (ghisi-edit-distance candidate chord-a))
                                         (setf spread-cost (* 1/3 (span-cost candidate chord-a)))
-                                        (setf parallel-cost (* 1/2 (reduce #'+ (parallelisms chord-a candidate punish-intervals))))
+                                        (setf parallel-cost (* 2 (reduce #'+ (parallelisms chord-a candidate punish-intervals))))
+                                        (setf mov-cost (* 2/3 (motion-cost tr)))
                                         (setf opt (list candidate (+ spread-cost mov-cost parallel-cost edit-cost)))
                                         (setf member? (equal nil (member opt options :test 'equal)))
                                         (if member?
@@ -525,6 +526,18 @@
             (span-b (- (list-max b) (list-min b))))
         (/ (abs (- span-a span-b)) 1200)))
 
+(defun pc-group (l)
+    (let*
+        (
+            (pc-list (nth-value 1 (om// l 1200)))
+            (unique-pc (remove-dup pc-list 'equal 1))
+            (out (repeat-n nil (length unique-pc)))
+            (pos nil))
+        (loop for p in l and pc in pc-list do
+            (setf pos (position pc unique-pc :test 'equal))
+            (setf (nth pos out) (append (nth pos out) (list p))))
+        out))
+
 ;--------------- Voice-leading methods ---------------
 (defmethod! Voice-leading ((st-chord list) (other-chords list) &optional (punish-intervals '(0 700)))
     :initvals '((4800 5500 6000 6400 7100) ((200 500 900) (0 500 900) (200 500 700 1100) (0 400)) (0 700))
@@ -551,22 +564,10 @@
                     (
                         (> size-b size-a)
                         (setf a (iterate-list (remove nil (flat (mat-trans (pc-group a)))) largest))))
-                (setf new (connect-chords a b punish-intervals))
-                (setf output (append output (list (remove-dup new 'equal 1))))
+                (setf new (sort-list (remove-dup (connect-chords (sort-list a) b punish-intervals) 'equal 1)))
+                (setf output (append output (list new)))
                 (setf a new)))
         (append (list st-chord) output)))
-
-(defun pc-group (l)
-    (let*
-        (
-            (pc-list (nth-value 1 (om// l 1200)))
-            (unique-pc (remove-dup pc-list 'equal 1))
-            (out (repeat-n nil (length unique-pc)))
-            (pos nil))
-        (loop for p in l and pc in pc-list do
-            (setf pos (position pc unique-pc :test 'equal))
-            (setf (nth pos out) (append (nth pos out) (list p))))
-        out))
 
 
 
