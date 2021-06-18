@@ -435,8 +435,7 @@
                                     (parallel-cost 0)
                                     (mov-cost 0)
                                     (spread-cost 0)
-                                    (opt nil)
-                                )
+                                    (opt nil))
                                 (if (equal nil (x-diff pc-b pc-cand))
                                     (progn 
                                         (setf edit-cost (ghisi-edit-distance candidate chord-a))
@@ -504,8 +503,7 @@
                             (
                                 (b (nth y voices))
                                 (dx (nth-value 1 (om// (om- b a) 1200)))
-                                (parallel? (equal (first dx) (second dx)))
-                            )
+                                (parallel? (equal (first dx) (second dx))))
                             (if parallel?
                                 (loop for z in mcdx and k from 0 to (- (length mcdx) 1) do
                                     (if (equal (first dx) z)
