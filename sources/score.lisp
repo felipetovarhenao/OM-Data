@@ -14,6 +14,22 @@
     :icon 000
     :menuins '((3 (("detect onsets" '0) ("detect onsets and durations" '1))) (4 (("no clipping" '0) ("clip onsets" '1) ("clip durations" '2) ("clip onsets and durations" '3))))
     :doc "Extracts a segment from a CHORD-SEQ, given a list of time points and duration for all segments.
+
+    Arguments:
+
+    - <self>: a CHORD-SEQ or MULTI-SEQ.
+    - <time-pt-list>: a list of lists of boundary time points.
+    - <samp-dur>: duration, in milliseconds, of segments.
+
+    &optional
+        - <detection-mode>: event detection mode for segmentation.
+            0 -> detect onsets.
+            1 -> detect onsets and durations
+        - <clip-mode>: clipping mode for events in within segment.
+            0 -> no clipping.
+            1 -> clip onsets.
+            2 -> clip durations.
+            3 -> clip onsets and durations.
     "
     (let*
         (
@@ -102,7 +118,12 @@
     :indoc '("chord-seq or multi-seq" "integer")
     :icon 000
     :doc "
-        Extracts the notes with the specified midi-channel from a CHORD-SEQ or MULTI-SEQ 
+    Extracts the notes with the specified midi-channel from a CHORD-SEQ or MULTI-SEQ.
+
+    Arguments:
+
+        - <self>: a CHORD-SEQ or MULTI-SEQ.
+        - <midi-chan>: a midi channel number.
     "
     (let*
         (
@@ -146,8 +167,18 @@
     :initvals '(nil '0 nil)
     :indoc '("multi-seq or poly" "join mode" "list")
     :icon 000
-    :doc "Joins a list of score objects, either by merging or concatenating them." 
     :menuins '((1 (("concat" '0) ("merge" '1))))
+    :doc "Joins a list of score objects, either by merging or concatenating them.
+    
+    Arguments:
+        - <seqs>: a list of CHORD-SEQ, VOICE, MULTI-SEQ, or POLY.
+
+        &optional:
+        - <mode>: join mode.
+            0 -> concatenate
+            1 -> merge.
+        - <concat-offset>: time points for concatenation, when <mode> is 0.
+    " 
     (let*
         (
             (out nil)
@@ -175,7 +206,13 @@
     :initvals '(nil 0.05)
     :indoc '("sequence" "number")
     :icon 000
-    :doc "Outputs a list of onsets corresponding to detected transients in a score object." 
+    :doc "Outputs a list of onsets corresponding to detected transients in a score object.
+    
+    Arguments:
+
+    - <self>: a CHORD-SEQ or MULTI-SEQ.
+    - <threshold>: a detection threshold between 0.0 and 1.0.
+    " 
     (let*
         (
             (out nil)
@@ -214,6 +251,7 @@
     :menuins '((4 (("and" 'and) ("or" 'or))))
     :icon 000
     :doc "Allows to filter out events within a CHORD-SEQ, based on any number of conditions. Given a list of ranges, filter parameters (see list below), filter types (pass/reject), and a boolean operator (and/or), each event in the CHORD-SEQ evaluated.
+
     Filter params:
 	- onset
 	- midic
@@ -224,6 +262,14 @@
 	- dxonset (interonset distance)
 	- chordsize
 	- pc (pitch class)
+
+    Arguments:
+
+    - <self>: a CHORD-SEQ.
+    - <ranges>: a list of list of ranges for defined <filter-params>.
+    - <filter-params>: filter parameters.
+    - <filter-types>: pass or reject behavior of filter.
+    - <bool>: menu of and/or boolean behavior for <filter-types>. 
 " 
     (let*
         (
@@ -299,6 +345,10 @@
         MIDI-CHANNEL
         INTER-ONSET_DISTANCE
         CHORD-SIZE)
+    
+    Arguments:
+
+        - <self>: a CHORD-SEQ.
     " 
     (let*
         (
@@ -336,6 +386,22 @@
     :indoc '("sequence" "number (ms)" "number or list (ms)" "number or list (ms)" "number or list (ms)" "number (ms)" "number or list (ms)" "number or list (ms)" "number or list (ms)" "menu")
     :icon 000
     :doc "Performs symbolic granulation on a CHORD-SEQ.
+
+    Arguments:
+
+        - <self>: a CHORD-SEQ.
+        - <output-dur>: output duration.
+        - <grain-dur>: maximum grain duration.
+        - <write-incr>: increment in output writing head, in milliseconds.
+        - <read-incr>: increment in output reading head, in milliseconds.
+
+        &optional:
+        - <st-read-time>: starting reading head time, in milliseconds.
+        - <dur-var>: random variation in grain duration, in milliseconds. either as a number or a list. A list specifies a linear change of value in output.
+        - <write-incr-var>: random variation in writing increment, in milliseconds. either as a number or a list. A list specifies a linear change of value in output.
+        - <read-incr-var>: random variation in reading increment, in milliseconds. either as a number or a list. A list specifies a linear change of value in output.
+        - <vel-var>: random variation in grain velocity, in milliseconds. either as a number or a list. A list specifies a linear change of value in output.
+        - <read-mode>: reading mode, either linear o circular.
         " 
     (let*
         (
@@ -431,6 +497,14 @@
     :icon 000
     :menuins '((4 (("nil" nil) ("octave equivalence" t))))
     :doc "Given a list of time points/markers (ms) and a list of target pitch collections/chords corresponding to those markers, pitches in the input chord-seq between those time points are snapped to the corresponding chords.
+
+    Arguments:
+        - <self>: a CHORD-SEQ.
+        - <chords>: a list of chords, in midicents.
+        
+        &optional:
+        - <accuracy>: mapping accuracy, between 0.0 and 1.0
+        - <octave-eq?>: boolean for octave equivalence.
     " 
     (let*
         (

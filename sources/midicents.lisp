@@ -110,7 +110,16 @@
     :initvals '((6000 5500 7600 7200) '(r l (l p) ))
     :indoc '("list" "list")
     :icon 000
-    :doc "Performs Neo-riemannian transformations on a starting triadic chord. The possible transformations are p l and r. Compound transformations are specified as lists of these 3 basic transformations."
+    :doc "Performs Neo-riemannian transformations on a starting triadic chord. The possible transformations are p l and r. Compound transformations are specified as lists of these 3 basic transformations.
+
+    Arguments:
+
+        <mc>: a list of midicents.
+        <transformations>: a list of symbols corresponding to each transformation.
+            r (relative)
+            p (parallel)
+            l (leading-tone exchange)
+    "
     (let* ()
         (if (eq (depth mc) 1)
             (loop for tr in transformations collect
@@ -123,6 +132,18 @@
     :indoc '("list or score sequence" "distortion index" "integer")
     :icon 000
     :doc "Applies spectral distortion to a list of midicents, given a distortion index d. In other words, it expands or compresses the intervals in relation to the lowest midicent value in the input list.
+
+    Arguments:
+
+        - <mc-list>: list (or list of lists) of midicents, or sequence objects (chord-seq, voice, multi-seq, or poly)
+        - <dist>: distortion index. if <dist> is:
+            = 1 -> no distortion
+            > 0 && < 1 -> compression
+            > 1 -> expansion
+            > -1 && < 0 -> inverted compression
+            = -1 -> inversion
+            < -1 inverted expansion
+        - <mc-fund>: reference fundamental for distortion. If nil, <mc-fund> is the lowest pitch in input.
     
     Examples:  
     (distortion '(6000 6400 6700 7200) 1.125) => (6000 6450 6788 7350)
@@ -178,6 +199,12 @@
     :indoc '("midicent list" "range lower bound" "range upperbound")
     :icon 000
     :doc "Fills the specified range with the midicents from chord-list.
+
+    Arguments:
+
+        - <chord-list>: list of midicents to fill range.
+        - <lower-bound>: lowest range boundary as midicent value.
+        - <upper-bound>: upper range boundary as midicent value.
     
     Example:
     (fill-range '(3600 5200 6700 7000) 6000 7200) => (6000 6400 6700 7000 7200)
@@ -198,11 +225,15 @@
             (band-filter output (list (list lower-bound upper-bound)) 'pass))))
 
 ; --------------- Shift-posn ---------------
-(defmethod! Shift-posn ((chord-list list) (n-step number))
+(defmethod! Shift-posn ((chord-list list) (n-step integer))
     :initvals '((3600 5200 6700 7000) 1)
     :indoc '("midicent list" "chordal step")
     :icon 000
     :doc "Shifts a collection of midicents by n steps along itself, assuming octave equivalence between pitches.
+
+    Arguments:
+        - <chord-list>: list of midicents.
+        - <n-step>: steps by which to shift <chord-list>.
     
     Example:
     (shift-posn '(3600 5200 6700 7000) '(1 2 3)) => ((4000 5500 7000 7200) (4300 5800 7200 7600) (4600 6000 7600 7900))
@@ -223,6 +254,9 @@
     :indoc '("list")
     :icon 000
     :doc "Recursively computes the chroma count of a list of midicents.
+
+    Arguments:
+        - <mc>: list (or list of lists) of midicents.
     
     Example: 
     (chroma-count '(6000 6400 6700 7000 7200)) => (2 0 0 0 1 0 0 1 0 0 1 0)
@@ -249,6 +283,10 @@
     :indoc '("list")
     :icon 000
     :doc "Recursively computes the interval vector of a list of midicents.
+
+    Arguments:
+
+        - <mc>: list (or list of lists) of midicents.
     
     Example:
     (ic-vector '(6000 6400 6700 7000 7200)) => (0 2 2 2 2 1)
@@ -278,6 +316,11 @@
     :indoc '("list" "number" "number")
     :icon 000
     :doc "Constrains a list of of midicents to a given range, using octave equivalence.
+
+    Arguments:
+        - <mc>: list (or list of lists) of midicents.        
+        - <lower-bound>: lower midicent boundary.
+        - <upper-bound>: upper midicent boundary.
     
     Example: 
     (mc-clip 5500 6000 7200) => 6700
@@ -305,7 +348,13 @@
     :indoc '("number or list" "number" "number")
     :icon 000
     :doc "Wraps a list of of midicents around a given range, using octave equivalence.
-    
+
+    Arguments:
+
+        - <mc>: list (or list of lists) of midicents.        
+        - <lower-bound>: lower midicent boundary.
+        - <upper-bound>: upper midicent boundary.
+
     Example: 
     (mc-wrap 5900 6000 7200) => 7100
     "
@@ -329,11 +378,19 @@
     (mapcar #'(lambda (input) (Mc-wrap input lower-bound upper-bound)) mc-list))
 
 ;--------------- Ic-cycle ---------------
-(defmethod! Ic-cycle ((mc-start number) (ic number) (lower-bound number) (upper-bound number) (n-times number))
+(defmethod! Ic-cycle ((mc-start integer) (ic integer) (lower-bound integer) (upper-bound integer) (n-times integer))
     :initvals '(6300 (500 200) 6000 6700 5)
-    :indoc '("number" "number or list" "number" "number" "number")
+    :indoc '("integer" "integer or list" "integer" "integer" "integer")
     :icon 000
     :doc "Builds an interval cycle given a starting pitch, a interval class, a lower and upper bound (range), and a number of iterations.
+
+    Arguments:
+
+        - <mc-start>: initial pitch, in midicents, of interval cycle.
+        - <ic>: interval or list of intervals in midicents.
+        - <lower-bound>: lower midicent boundary.
+        - <upper-bound>: upper midicent boundary.
+        - <n-times>: number of cycles (repetitions of <ic>).
 
     Example:
     (ic-cycle 6300 '(500 200) 6000 6700 5) => (6300 6800 7000 6300 6500)
@@ -345,7 +402,7 @@
             (setf out (append out (list (+ mc-start (* x ic))))))
         (mc-wrap out lower-bound upper-bound)))
 
-(defmethod! Ic-cycle ((mc-start number) (ic list) (lower-bound number) (upper-bound number) (n-times number))
+(defmethod! Ic-cycle ((mc-start integer) (ic list) (lower-bound integer) (upper-bound integer) (n-times integer))
     (let*
         (
             (out (list mc-start)))
@@ -356,12 +413,22 @@
                     (setf out (append out (list mc-start))))))
         (mc-wrap out lower-bound upper-bound)))
 
-(defmethod! Harmonic-distr ((mc-list list) (mc-fund number) (max-dist integer) &optional (mode '0))
+(defmethod! Harmonic-distr ((mc-list list) (mc-fund integer) (max-dist integer) &optional (mode '0))
     :initvals '((6000 6300 6700 7200) 4500 200 0)
     :indoc '("list" "number" "integer" "menu")
     :menuins '((3 (("nil" 0) ("incl. fundamental" 1))))
     :icon 000
     :doc "Re-distributes a list of midicents in register, such that it resembles a harmonic series of a given (virtual) fundamental.
+
+
+    Arguments:
+    
+        - <mc-list>: list of midicents
+        - <mc-fund>: fundamental or target harmonic series, in midicents.
+        - <max-dist>: distance threshold for partial matching.
+
+        &optional:
+        - <mode>: 0 -> remove fundamental from output. 1 -> include fundamental in output.
     "
     (let* ()   
         (if (< max-dist 15)
@@ -541,7 +608,18 @@
     :initvals '((4800 5500 6000 6400 7100) ((200 500 900) (0 500 900) (200 500 700 1100) (0 400)) (0 700))
     :indoc '("list" "list" "list")
     :icon 000
-    :doc "Voice leading
+    :doc "Concatenates a series of chords such that the voice leading between them is optimally smooth.
+
+    Arguments:
+
+    - <st-chord>: a list of midicents.
+    - <other-chords>: a list of lists of midicents (i.e. a chord progression).
+
+    &optional:
+    - <punish-intervals>: list of intervals, in midicents, for which parallel motion should be avoided. Intervals should be given as mod-1200 values.
+    e.g.: 
+    0 -> parallel unisons/octaves
+    700 -> parallel perfect fifths.
     "
     (let* 
         (
