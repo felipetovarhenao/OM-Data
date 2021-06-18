@@ -72,6 +72,7 @@
             IC-cycle
             Mc-clip
             Mc-wrap
+            Voice-leading
             ) nil)
         ("5-Rhythm" nil nil (
             Rhythmicon
