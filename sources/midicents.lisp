@@ -382,7 +382,7 @@
     :initvals '(6300 (500 200) 6000 6700 5)
     :indoc '("integer" "integer or list" "integer" "integer" "integer")
     :icon 000
-    :doc "Builds an interval cycle given a starting pitch, a interval class, a lower and upper bound (range), and a number of iterations.
+    :doc "Builds an interval cycle given a starting pitch, an interval class, a lower and upper bound (range), and a number of iterations.
 
     Arguments:
 
@@ -422,7 +422,7 @@
 
 
     Arguments:
-    
+
         - <mc-list>: list of midicents
         - <mc-fund>: fundamental or target harmonic series, in midicents.
         - <max-dist>: distance threshold for partial matching.
@@ -604,10 +604,11 @@
         out))
 
 ;--------------- Voice-leading methods ---------------
-(defmethod! Voice-leading ((st-chord list) (other-chords list) &optional (punish-intervals '(0 700)))
-    :initvals '((4800 5500 6000 6400 7100) ((200 500 900) (0 500 900) (200 500 700 1100) (0 400)) (0 700))
-    :indoc '("list" "list" "list")
+(defmethod! Voice-leading ((st-chord list) (other-chords list) &optional (punish-intervals '(0 700)) (doublings? nil))
+    :initvals '((4800 5500 6000 6400 7100) ((200 500 900) (0 500 900) (200 500 700 1100) (0 400)) (0 700) nil)
+    :indoc '("list" "list" "list" "menu")
     :icon 000
+    :menuins '((3 (("nil" nil) ("t" t))))
     :doc "Concatenates a series of chords such that the voice leading between them is optimally smooth.
 
     Arguments:
@@ -620,6 +621,7 @@
     e.g.: 
     0 -> parallel unisons/octaves
     700 -> parallel perfect fifths.
+    - <doublings?>: boolean menu for preserving doublings.
     "
     (let* 
         (
@@ -640,7 +642,9 @@
                     (
                         (> size-b size-a)
                         (setf a (iterate-list (remove nil (flat (mat-trans (pc-group a)))) largest))))
-                (setf new (sort-list (remove-dup (connect-chords (sort-list a) b punish-intervals) 'equal 1)))
+                (setf new (sort-list (connect-chords (sort-list a) b punish-intervals)))
+                (if (not doublings?)
+                    (setf new (remove-dup new 'equal 1)))
                 (setf output (append output (list new)))
                 (setf a new)))
         (append (list st-chord) output)))

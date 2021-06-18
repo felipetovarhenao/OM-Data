@@ -26,7 +26,15 @@
     :initvals '('(x f) '((x (x + y f + + y f - f x - - f x f x - y f +)) (y (- f x + y f y f + + y f + f x - - f x - y))) 3)
     :indoc '("atom" "list" "integer")
     :icon 000
-    :doc "Outputs a deterministically generated sequence of elements, given an axiom, a list of production rules, and a number of generations." 
+    :doc "L-SYSTEM (or Lindenmayer system) outputs a deterministically generated sequence of elements, given an axiom, a list of production rules, and a number of generations.
+
+    Arguments:
+
+    - <axiom>: axiom of l-system.
+    - <rules>: list of lists containg rewriting rules. e.g. ((element_1 (rewrite_1)) (element_2 (rewrite_2)) (element_N (rewrite_N)))
+    - <generations>: number of output generations.
+
+    " 
     (string-rewrite axiom rules generations))
 
 (defmethod! L-system ((axiom string) (rules list) (generations integer))
@@ -40,7 +48,19 @@
     :initvals '(([ f - f ] + f [ f - f ] + f [ f - f ] + f [ f - f ] + f [ f - f ] + f [ f - f ] + f) '((f 1)) '((+ 60) (- -60)) '(([ 1) (] 0)) 0)
     :indoc '("list" "list" "list" "list" "number")
     :icon 000
-    :doc "2D Turtle graphics"
+    :doc "2D Turtle graphics.
+
+    Arguments:
+
+    - <lsys>:
+    - <mag-rules>:
+    - <theta-rules>:
+    - <memory-rules>:
+
+    &optional:
+    - <theta>:
+
+    "
     (let*
         (
             (x 0)
@@ -85,7 +105,7 @@
         (2 (("union" 'union) ("diff" 'diff)))
         (3 (("nil" 'nil) ("complement" 'complement))))
     :icon 000
-    :doc "Builds N full periods of a sieve, based on a list of integers. Make-sieve is meant to be a compact version of OM's native CRIBLE class and functions"
+    :doc "Builds N full periods of a sieve, based on a list of integers. Make-sieve is meant to be a compact version of OM's native CRIBLE class and functions."
     (let* ()
         (setf list (remove 0 list))
         (let*

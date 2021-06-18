@@ -18,6 +18,13 @@
     :doc "Cross-interpolation between elements of list A and elements of list B, defined by a given interpolation trajectory/path list. The trajectory list must have at least two values, all between 0.0 and 1.0, which represent the normalized percentage of linear interpolation from list A to list B.
 
     List A and B do not need to have the same length, but list-b must be of depth 1. List A can be a nested list.
+
+    Arguments:
+
+    - <a-list>: list of lists.
+    - <b-list>: target list.
+    - <traj>: interpolation trajectory from values in <a-list> to <b-list>. 0.0 is <a-list>, 1.0 is <b-list>.
+
     "
     (let*
         (
@@ -62,6 +69,10 @@
     :indoc '("list")
     :icon 000
     :doc "Returns a list of element positions, based on possible repetitions.
+
+    Arguments:
+    
+    - <l>: a list (or list of lists).
     
     Example:
     (posn-map '((0 0) (0 1) (1 0) (1 0) (0 0) (1 1))) => (0 1 2 2 0 3)
@@ -83,6 +94,12 @@
     :indoc '("list" "list" "integer")
     :icon 000
     :doc "Chooses a random element with weighted probabilities, N number of times.
+
+    Arguments:
+
+    - <in-list>: list to choose elements from.
+    - <weights>: weights corresponding to those items.
+    - <times>: number of randomly chosen elements.
     
     Example:
     (pick-random '((1 1 1) (2 2 2) (3 3 3) (4 4 4)) '(1 2 3 4) 3) => ((4 4 4) (4 4 4) (4 4 4))
@@ -118,6 +135,12 @@
     :indoc '("list" "number" "number")
     :icon 000
     :doc "Wraps the values of a list around a given range.
+
+    Arguments:
+
+    - <val>: a list (or list of lists).
+    - <lower-bound>: lower wrapping boundary.
+    - <upper-bound>: upper wrapping boundary.
     
     Example:
     (list-wrap '(-2 -1 0 1 2 3 4 5 6) 0 3) => (1 2 0 1 2 0 1 2 0)
@@ -149,6 +172,12 @@
     :indoc '("list" "number" "number")
     :icon 000
     :doc "Folds the values of a list around a given range.
+
+    Arguments:
+
+    - <val>: a list (or list of lists).
+    - <lower-bound>: lower folding boundary.
+    - <upper-bound>: upper folding boundary.
     
     Example:
     (list-fold '(-2 -1 0 1 2 3 4 5 6) 0 3) => (2 1 0 1 2 3 2 1 0)
@@ -190,7 +219,15 @@
     :menuins '((1 (("permutations" 'permutations) ("rotations" 'rotations))))
     :icon 000
     :numouts 2
-    :doc "Searches for symmetric or near-symmetric permutations of a list. The search can be done on all permutations or rotations only
+    :doc "Searches for symmetric or near-symmetric permutations of a list. The search can be done on all permutations or rotations only.
+
+    Arguments:
+
+    - <in-list>: a list.
+    - <mode>: symmetry search mode, either in all permutations of <in-list> or rotations only.
+
+    &optional:
+    - <tolerance>: assymetry tolerance threshold, between 0.0 and 1.0.
     
     Examples:
     (List-symmetries '(3 1 1 3 2 1 1 2) 'rotations 0.0) => [ ((1 3 2 1 1 2 3 1) (1 2 3 1 1 3 2 1)) (0 0) ]
@@ -236,6 +273,14 @@
     :indoc '("list" "integer" "integer")
     :icon 000
     :doc "Parses a list into smaller lists (frames), given a frame length and a hop size.
+
+    Arguments:
+
+    - <in-list>: a list (or list of lists).
+    - <size>: size of output frames.
+
+    &optional:
+    - <hop>: hop size for frames in <in-list>.
 
     Examples:
 
@@ -300,6 +345,11 @@
     :indoc '("list" "mod-n")
     :icon 000
     :doc "Applies sign-preserving modulo arithmetic to input-list.
+
+    Arguments:
+
+    - <input-list>: a list (or list of lists).
+    - <n>: mod-n.
     
     Example:
     (list-mod '(-3 -2 -1 0 1 2 3) 2) => (-1 0 -1 0 1 0 1)
@@ -324,7 +374,12 @@
     :initvals '((("a") "b" (("c") "d") ((("e")))) ("a" "b" "c" "d" "e"))
     :indoc '("list" "integer")
     :icon 000
-    :doc "Finds the position in list B for every element in list A. List B must be of depth 1.
+    :doc "Finds the position in <b-list> for every element in list <a>. <list-b> must be of depth 1.
+
+    Arguments:
+
+    - <a>: list of lists.
+    - <b-list>: list of elements to be found in <a>.
     
     Example: 
     (nested-position '((\"a\") \"b\" ((\"c\") \"d\") (((\"e\")))) '(\"a\" \"b\" \"c\" \"d\" \"e\")) => ((0) 1 ((2) 3) (((4))))
@@ -350,6 +405,10 @@
     :indoc '("list" "integer")
     :icon 000
     :doc "Finds the nth element in list B for every position in list A. List B must be of depth 1.
+
+    Arguments:
+    - <a>: nested list with positions of elements in <b-list>.
+    - <b-list>: list of elements.
     
     Example:
     (nested-nth '((0) 1 ((2) 3) (((4)))) '(\"a\" \"b\" \"c\" \"d\" \"e\")) => ((\"a\") \"b\" ((\"c\") \"d\") (((\"e\"))))
@@ -369,13 +428,19 @@
 (defmethod! Nested-nth ((a symbol) (b-list list))
     (nth a b-list))
 
-
 ;--------------- Deep-nth ---------------
 (defmethod! Deep-nth ((data list) (path list))
     :initvals '((((0 1) (2 3)) ((4 5 6) (7 8 ("nine")))) (1 1 2))
     :indoc '("list" "list")
     :icon 000
-    :doc "Gets the nth element of a nested list, given a list of positions corresponding to each level in the input list."
+    :doc "Gets the nth element of a nested list, given a list of positions corresponding to each level in the input list.
+
+    Arguments:
+
+    - <data>: list (or list of lists).
+    - <path>: address of desired element in <data>, in bach-style format.
+
+    "
     (let*
         (
             (out nil)
@@ -392,7 +457,15 @@
     :initvals '((((0 1) (2 3)) ((4 5 6) (7 8 (9)))) (1 1 2) "nine")
     :indoc '("list" "list" "list or atom")
     :icon 000
-    :doc "Replaces any element in a list with a new element, given a list of positions corresponding to each level in the input list."
+    :doc "Replaces any element in a list with a new element, given a list of positions corresponding to each level in the input list.
+    
+    Arguments:
+
+    - <data>: list (or list of lists).
+    - <path>: bach-style address of element in <data> to be replaced.
+    _ <new>: replacing element.
+
+    "
     (let*
         (
             (data-copy (copy-tree data))
@@ -419,6 +492,11 @@
     :indoc '("item" "list")
     :icon 000
     :doc "Counts the number of occurances of an element in a list.
+
+    Arguments:
+
+    - <x>: number, or list (or list of lists).
+    - <l>: element to count appearances of, in <x>.
 
     Example:
     (n-occur 2 '(0 1 2 1 4 3 2 2)) => 3
@@ -456,6 +534,10 @@
     :icon 000
     :doc "Removes repetitions between consecutive elements.
 
+    Arguments:
+
+    - <l>: list (or list of lists).
+
     Example:
     (rep-filter '((1 2) (3 3) (4 2) (4 2) (2 2) (2 2))) => ((1 2) (3 3) (4 2) (2 2))
     "
@@ -473,6 +555,11 @@
     :indoc '("list" "integer")
     :icon 000
     :doc "Performs a series of random permutations such that no element appears consecutively in the same position.
+
+    Arguments:
+
+    - <a-list>: list (or lists of lists).
+    - <times>: number of elements in output.
 
     Example:
     (unique-scramble '(0 1 2) 4) => ((0 1 2) (2 0 1) (1 2 0) (0 1 2))

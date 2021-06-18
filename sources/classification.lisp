@@ -14,6 +14,12 @@
     :icon 000
     :numouts 2
     :doc "Sorts the lists based on the exhaustive nearest neighbor seach algorithm, using Euclidean distance as the sorting measurement.
+
+    Arguments:
+
+    - <main-list>: reference values or list of values.
+    - <other-lists>: lists of lists of values to calculate distance from <main-list>.
+    - <weights>: list of weight values for each element in <main-list>.
     
     NOTE: All lists must have the same length.
     Example:  
@@ -73,6 +79,12 @@
     :doc "Unsupervised data clustering algorithm.
     
     NOTE: All data items must have the same size. Weights are optional.
+
+    Arguments:
+
+    - <data>: a list of lists.
+    - <k>: number of assumed classes in <data>.
+    - <weights>: list of weight values for each element in <data>.
     
     Example:
     (k-means '((0 1 0) (-3 -1 2) (4 0 9) (-3 -5 -1) (0 4 -3) (2 1 -4)) 2 nil) => (((0 1 0) (-3 -1 2) (-3 -5 -1) (0 4 -3) (2 1 -4)) ((4 0 9)))
@@ -214,6 +226,11 @@
     :outdoc '("sorted lists" "sorted")
     :doc "Sorts the lists in second input using Dynamic Time Warping.
     
+    Arguments:
+
+    - <list-a>: a list of numeric values.
+    - <list-b>: a list of lists of numeric values.
+
     Example:
     (dtw '(0 1 2 3 4 5) '(1 1 2 3 5)) => [ 9 ((0 0) (1 0) (1 1) (2 2) (3 3) (4 4) (5 4)) ]
     "
@@ -244,6 +261,12 @@
     :icon 000
     :doc "Works in combination with DTW, aligning the values of the main time series to the others. Use the left input of DTW as in1, and the outputs of DTW as in2 and in3, respectively.
     
+    Arguments:
+
+    - <a>: times series A.
+    - <b>: time series B.
+    - <posn>: list of lists specifying the matching positions between <a> and <b>.
+
     Example: 
     (dtw-align '(0 1 2 3 4 2) '(0 2 3 4 1) '((0 0) (1 0) (2 1) (3 2) (4 3) (5 4))) => ((0 0) (1 0) (2 2) (3 3) (4 4) (2 1))
     "
@@ -268,7 +291,12 @@
     :icon 000
     :numouts 2
     :outdoc '("nodes" "list")
-    :doc "Computes a k-dimensional tree"
+    :doc "Computes a k-dimensional tree to be used with KNN.
+    
+    Arguments:
+
+    <data-set>: list of lists.
+    "
     (let*
         (
             (transp-data (mat-trans data-set))
@@ -297,7 +325,19 @@
     :initvals '((0.5 0.2) 1 (0 1) ((((-2 -2)) ((-1 1))) (((0 0)) ((2 2) (1 1)))) nil)
     :indoc '("list" "integer" "list" "list" "list")
     :icon 000
-    :doc "Finds the K-nearest neighbors within a given KDTree."
+    :doc "Finds the K-nearest neighbors within a given KDTree.
+
+    Arguments:
+
+    - <data>: list of lists
+    - <k>: number of desired closest neighbors.
+    - <tree-nodes>: nodes from output 1 of KDTREE.
+    - <kd-tree>: tree from output 2 of KDTREE.
+    
+    &optional:
+    - <weights>: list of weight values for each element in <data>.
+
+    "
     (let* 
         (
             (branch nil)
@@ -328,6 +368,10 @@
     :indoc '("list" "integer")
     :icon 000
     :doc "Takes a list and computes a Nth-order transition probability matrix of the elements (states) in the list. MARKOV-BUILD is meant to be used along with MARKOV-RUN.
+
+    Arguments:
+    - <data>: list of lists.
+    - <order>: integer specifying the order of markov model.
     "
     (let* ()
         (setf data (List-frames data order 1))
@@ -357,6 +401,17 @@
     :icon 000
     :menuins '((3 (("no reset" '0) ("allow reset" '1))))
     :doc "Takes a transition probability matrix and outputs a sequence of a given length. MARKOV-RUN is meant to be used along with MARKOV-BUILD.
+
+    Arguments:
+
+    - <matrix>: transition matrix from MARKOV-BUILD.
+    - <iterations>: number of output states.
+    
+    &optional:
+    - <initial>: initial state.
+    - <mode>: output behavior.
+        0 -> allow MARKOV-RUN to stop if 'dead-end' state is reached.
+        1 -> if a dead-end state is reached, reset with a random state until reaching the specified number in <iterations>.
     "
     (let*
         (
@@ -401,6 +456,12 @@
     :doc "Sorts a list of lists such that the distance between adjacent lists is optimally minimized, given a starting list.
     
     NOTE: All lists must have the same length.
+
+    Arguments:
+
+    - <st-list>: initial list
+    - <other-lists>: list of lists to sort.
+    - <weights>: list of weight values for each element in <st-list>.
     
     Example:
     (optimal-sorting '(0 0 0 2) '((0 1 2 3) (2 3 4 5) (1 2 3 4)) nil) => ((0 0 0 2) (0 1 2 3) (1 2 3 4) (2 3 4 5))

@@ -15,6 +15,12 @@
     :doc "Computes the Euclidean distance from one list to a list of lists.
 
     NOTE: All lists must have the same length.
+
+    Arguments:
+
+    - <a-list>: list of numeric values.
+    - <b-list>: list of numeric values.
+    - <weights>: list of weight values for each element in <a-list>.
     
     Example:  
     (euclidean-distance '(0 1 2 3) '((1 2 3 4) (3 4 6 8)) nil)) => (2.0 7.6811457)
@@ -48,6 +54,15 @@
     :doc "Computes the statistical moments of a list of values: population mean, population standard deviation, skewness and kurtosis. 
     The right inlet specifies which moments to put out, by index. For instance, (0 2) outputs the mean and skewness only. The list (0 1 2 3) outputs all four moments.
     
+    Arguments:
+
+    - <data>: list (or list of lists) of numeric values.
+    - <moments>: list of positions for desired moments in output.
+        0 -> mean.
+        1 -> standard deviation.
+        2 -> skweness.
+        3 -> kurtosis.
+
     Example:
     (list-moments '(5 2 3 4 5 6) '(0 1 2 3)) => (4.1666665 1.3437096 -0.30531597 1.8482844)
     " 
@@ -89,7 +104,12 @@
     :initvals '((4 2 5 6 1 2 0 -4))
     :indoc '("list")
     :icon 000
-    :doc "Computes the median of a list of numeric values"
+    :doc "Computes the median of a list of numeric values.
+    
+    Arguments:
+
+    - <l>: list.
+    "
     (let* 
         (
             (size nil)
@@ -112,7 +132,12 @@
     :initvals '((4 2 5 6 1 2 0 -4))
     :indoc '("list")
     :icon 000
-    :doc "Computes the mode of a list of numeric values"
+    :doc "Computes the mode of a list of numeric values.
+    
+    Arguments:
+    - <l>: list of numeric values.
+
+    "
     (let*
         (
             (counts nil))
@@ -133,6 +158,11 @@
     :icon 000
     :doc "Computes the standard score (a.k.a. z-score) value of a list based on another.
 
+    Arguments:
+
+    - <x>: number or list of numbers.
+    - <l>: list of numeric values.
+
     Example: 
     (list-zscore '(0 3 6) '(0 1 2 3 4 5 6)) => (1.5 0.0 -1.5)
     "  
@@ -151,7 +181,13 @@
     :initvals '(((-2 2) (0 0) (1 -1) (-1 1) (-4 3) (-3 4)))
     :indoc '("list")
     :icon 000
-    :doc "Computes the covariance of a given set of data points"
+    :doc "Computes the covariance of a given set of data points.
+    
+    Arguments:
+
+    - <data>: list of lists.
+
+    "
     (let*
         (
         (means (flat (list-moments (mat-trans data) '(0))))
@@ -168,7 +204,12 @@
     :initvals '(((-2 2) (0 0) (1 -1) (-1 1) (-4 3) (-3 4)))
     :indoc '("list")
     :icon 000
-    :doc "Computes the correlation of a given set of data points"
+    :doc "Computes the correlation of a given set of data points.
+    
+    Arguments:
+
+    - <data>: list of lists.
+    "
     (let*
         (
             (trans-data (mat-trans data))
@@ -181,7 +222,12 @@
     :initvals '(((-2 2) (0 0) (1 -1) (-1 1) (-4 3) (-3 4)))
     :indoc '("list")
     :icon 000
-    :doc "Plots a list of data points in a bpc-lib or 3dc-lib, depending on the dimensionality of the data."
+    :doc "Plots a list of data points in a bpc-lib or 3dc-lib, depending on the dimensionality of the data.
+
+    Arguments:
+
+    - <points>: list of 2- or 3-dimensional data.
+    "
     (let*
         (
             (bp-list nil)
