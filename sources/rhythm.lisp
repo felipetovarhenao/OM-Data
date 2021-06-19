@@ -12,7 +12,13 @@
     :initvals '(5 13 0)
     :indoc '("integer" "integer" "integer")
     :icon 000
-    :doc "euclidean-rhythm, as the name suggests, computes the Euclidean rhythm for a given period k and number of beats/pulses n, where n < k. The output can be interpreted as a list of intervals or distances between between pulses
+    :doc "EUCLIDEAN-RHYTHM, as the name suggests, computes the Euclidean rhythm for a given period k and number of beats/pulses n, where n < k. The output can be interpreted as a list of intervals or distances between between pulses.
+
+    Arguments:
+
+    - <numbeats>: number of beats in pattern.
+    - <period>: period of pattern.
+    - <rotation>: rotation of pattern.
     "
     (let*   
         (
@@ -42,6 +48,13 @@
     :icon 000
     :menuins '((3 (("div" 'div) ("mult" 'mult))))
     :doc "Outputs a rhythmicon as a MULTI-SEQ, given a fundamental duration (ms), a list of subdivisions, and a number of repetitions. For each rhythmic partial, the corresponding pitch is automatically assigned, using 3300 as the fundamental.
+
+    Arguments:
+
+    - <base-dur>: reference duration in milliseconds.
+    - <subdivisions>: values by which to either multiply or divide <base-dur>, based on <mode>.
+    - <times>: number of cycles.
+    - <mode>: rhythmicon mode, either multiplicative or divisive.
     "
     (let*
         (
@@ -142,7 +155,19 @@
     :indoc '("chord-seq" "number" "integer" "integer" "menu")
     :icon 000
     :menuins '((4 (("accelerando" '0) ("ritardando" '1))) (5 (("preserve pitch" '0) ("period-wise transp." '1) ("chord-wise transp." '2))))
-    :doc "Builds a seemingly eternal accelerando/ritardando, based on an input CHORD-SEQ, a speed factor, number of voices, number of repetitions."
+    :doc "Builds a seemingly eternal accelerando/ritardando, based on an input CHORD-SEQ, a speed factor, number of voices, number of repetitions.
+
+    Arguments:
+
+    - <self>: a CHORD-SEQ.
+    - <speed>: speed factor of central voice.
+    - <voices>: number of voices in resulting rhythm.
+    - <rep>: number of cycles.
+
+    &optional:
+    - <onset-mode>: agogic mode, either accelerando or ritardando.
+    - <mc-mode>: mode for midicents treatment, either preserve original values in <self>, transpose pitch period-wise, or chord-wise.
+    "
     (let*
         (
             (out nil)

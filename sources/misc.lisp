@@ -52,13 +52,13 @@
 
     Arguments:
 
-    - <lsys>:
-    - <mag-rules>:
-    - <theta-rules>:
-    - <memory-rules>:
+    - <lsys>: a list or output of L-SYSTEM
+    - <mag-rules>: interpretation rules for magnitude changes (drawing).
+    - <theta-rules>: interpretation rules for angle changes (direction). Angles are specified in degrees.
+    - <memory-rules>: interpretation rules for buffer changes.
 
     &optional:
-    - <theta>:
+    - <theta>: initial angle, specified in degrees.
 
     "
     (let*
@@ -105,7 +105,18 @@
         (2 (("union" 'union) ("diff" 'diff)))
         (3 (("nil" 'nil) ("complement" 'complement))))
     :icon 000
-    :doc "Builds N full periods of a sieve, based on a list of integers. Make-sieve is meant to be a compact version of OM's native CRIBLE class and functions."
+    :doc "Builds N full periods of a sieve, based on a list of integers. Make-sieve is meant to be a compact version of OM's native CRIBLE class and functions.
+    
+    Arguments:
+
+    - <list>: list of numeric values.
+    - <reps>: number of cycles.
+    - <sieve-mode>: union or difference.
+    - <sieve-type>: nil or complement.
+
+    &optional:
+    - <offset>: sieve offset.
+    "
     (let* ()
         (setf list (remove 0 list))
         (let*
@@ -172,6 +183,11 @@
     :icon 000
     :doc "Takes the ascending modular differences between adjacent values. Based on Anatol Vieru's modal sequences.
 
+    Arguments:
+
+    - <seq>: a list of numeric values, usually symmetrical.
+    - <n-tiers>: number of tiers or generations.
+
     Examples:
     (vieru-seq '(4 1 2 1 4) 1) => ((9 1 11 3 0))
     (vieru-seq '(2 1 4 1 2) 3) => ((9 3 7 1 0) (4 4 4 9 9) (0 0 5 0 5))
@@ -205,7 +221,18 @@
     :indoc '("list" "number" "menu")
     :menuins '((2 (("nil" nil) ("rotations" 'rotations))))
     :icon 000
-    :doc "Given two numeric lists A and B, outputs a list of possible extensions of A through segments B. More precisely, it searches for segments of B, where the sum of changes in those segments match the change (i.e. interval) between adjacent elements in A. Based on the technique described by Antonio de Sousa Dias in 'Free transposition of Audio Processing Techniques into the Domain of Notes'
+    :doc "Given two numeric lists A and B, outputs a list of possible extensions of A through segments B. More precisely, it searches for segments of B, where the sum of changes in those segments match the change (i.e. interval) between adjacent elements in A. Based on the technique described by Antonio de Sousa Dias in 'Free transposition of Audio Processing Techniques into the Domain of Notes'.
+
+    Arguments:
+
+    - <list-a>: 'cantus firmus' as a list of midicents.
+    - <list-b>: 'ornamental line' as a list of midicents.
+
+    &optional:
+    - <rotations>: search mode:
+    nil -> search through original <list-b>.
+    rotations -> search through rotations of <list-b>
+
     "
     (let*
         (
