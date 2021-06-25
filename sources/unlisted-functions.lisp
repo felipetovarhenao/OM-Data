@@ -43,6 +43,40 @@
         (mix a b f)
         (mapcar #'(lambda (in1 in2) (nested-mix in1 in2 f)) a b)))
 
+(defun dec->bin (x n)
+    (let*
+        (
+            (out nil)
+            (vals nil))
+        (if (> x 0)
+            (progn
+                (while (> x 0)
+                    (setf vals (multiple-value-list (floor x 2)))
+                    (setf x (car vals))
+                    (setf out (append out (cdr vals))))
+                (if (< (length out) n)
+                    (setf out (append out (repeat-n 0 (- n (length out)))))))
+            (setf out (repeat-n 0 n)))
+        out))
+
+(defun bin->dec (seq)
+    (let*
+        (
+            (out 0))
+        (loop for x in seq and i from 0 to (- (length seq) 1) do
+            (if (equal x 1)
+                (setf out (+ out (expt 2 i)))))
+        out))
+
+(defun branch-posn (data nodes)
+    (bin->dec (loop for d in data and n in nodes collect
+        (if (< d n) 0 1))))
+
+(defun wedge-sum (a b)
+    (if (eq (mod b 2) 0)
+        (setf b (* -1 (nth-value 0 (floor b 2))))
+        (setf b (nth-value 0 (floor (+ b 1) 2))))   
+    (+ a b))
 
 ;--------------- Array (Matrix) operations ---------------
 (defun simple-arr-determinant (arr)

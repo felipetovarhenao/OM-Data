@@ -76,6 +76,7 @@
     :indoc '("list" "k (integer)" "weights (optional)")
     :icon 000
     :numouts 2
+    :outdoc '("clustered data" "clustered positions")
     :doc "Unsupervised data clustering algorithm.
     
     NOTE: All data items must have the same size. Weights are optional.
@@ -285,82 +286,92 @@
         out))
 
 ;--------------- KDTree ---------------
-(defmethod! KDTree ((data-set list))
-    :initvals '(((0 5) (-2 -3) (4 0) (5 -3) (5 7) (0.3 6.5)))
-    :indoc '("list")
+(defmethod! KDTree ((data-set list) &optional (max-k 4))
+    :initvals '(((4 0) (4 3) (-4 1) (1 3) (1 -3) (0 3) (-2 -2) (-2 3)) 4)
+    :indoc '("list" "integer")
     :icon 000
-    :numouts 2
-    :outdoc '("nodes" "list")
-    :doc "Computes a k-dimensional tree to be used with KNN.
+    :numouts 3
+    :outdoc '("nodes" "tree" "positions")
+    :doc "Computes a non-recursive k-dimensional tree to be used in tandem with KNN.
     
     Arguments:
 
-    <data-set>: list of lists.
+    - <data-set>: list of lists.
+
+    &optional
+    - <max-k>: max number of dimensions. (numbranches = 2^dimensions)
+
+    Output:
+    - <nodes>
+    - <tree>
+    - <positions>
     "
     (let*
         (
-            (transp-data (mat-trans data-set))
-            (nodes (list-median transp-data))
-            (tree (nil-matrix (repeat-n 2 (length nodes)))))
-        (loop for d in data-set do
-            (let*
-                (
-                    (branch nil)
-                    (update nil))
-                (loop for n in nodes and i from 0 to (- (length nodes) 1) do
-                    (let*
-                        (
-                            (val (nth i d))
-                            (pos nil))
-                        (if (< val n)
-                            (setf pos 0)
-                            (setf pos 1))
-                        (setf branch (append branch (list pos)))))
-                (setf update (append (deep-nth tree branch) (list d)))
-                (setf tree (deep-replace tree branch update))))
-        (values-list (list nodes tree)))) 
+            (nodes (first-n (list-median (mat-trans data-set)) max-k))
+            (branches (repeat-n nil (expt 2 (length nodes))))
+            (positions (copy-tree branches))
+            (posn nil))
+        (loop for x in data-set and i from 0 to (- (length data-set) 1) do
+            (setf posn (branch-posn (first-n x max-k) nodes))
+            (setf (nth posn branches) (append (nth posn branches) (list x)))
+            (setf (nth posn positions) (append (nth posn positions) (list i)))
+        )
+        (values-list (list nodes branches positions))))
 
 ;--------------- KNN ---------------
-(defmethod! KNN ((data list) (k integer) (tree-nodes list) (kd-tree list) &optional (weights nil))
-    :initvals '((0.5 0.2) 1 (0 1) ((((-2 -2)) ((-1 1))) (((0 0)) ((2 2) (1 1)))) nil)
-    :indoc '("list" "integer" "list" "list" "list")
+(defmethod! KNN ((data list) (tree-nodes list) (kd-tree list) (tree-posns list) &optional (k 1) (weights nil))
+    :initvals '((0 0) (1.0 -0.5) (((1 -2) (2 -4)) ((3 -2) (4 -3)) ((-4 4)) ((3 -1) (3 4) (3 4))) ((2 6) (0 4) (5 7) (1 3)) 1 nil)
+    :indoc '("list" "list" "list" "list" "integer")
     :icon 000
+    :numouts 2
+    :outdoc '("nearest neighbors" "neighbors' positions")
     :doc "Finds the K-nearest neighbors within a given KDTree.
 
     Arguments:
 
     - <data>: list of lists
-    - <k>: number of desired closest neighbors.
     - <tree-nodes>: nodes from output 1 of KDTREE.
     - <kd-tree>: tree from output 2 of KDTREE.
+    - <tree-posns>: element positions from output 3 of KDTREE
     
     &optional:
+    - <k>: number of desired closest neighbors.
     - <weights>: list of weight values for each element in <data>.
-
     "
     (let* 
         (
-            (branch nil)
-            (out nil)
-            (neighbors nil))
+            (neighborhood nil)
+            (neighbors nil)
+            (flag t)
+            (numbranches (expt 2 (length tree-nodes)))
+            (branch-id nil)
+            (positions nil)
+            (main-branch nil)
+            (search-count 1)
+        )
         (if (equal (depth data) 1)
             (progn
-                (setf branch nil)
-                (loop for n in tree-nodes and i from 0 to (- (length tree-nodes) 1) do
-                    (let* 
-                        (
-                            (val (nth i data))
-                            (pos nil))
-                        (if (< val n)
-                            (setf pos 0)
-                            (setf pos 1))
-                        (setf branch (append branch (list pos)))))
-                (setf neighbors (deep-nth kd-tree branch))
-                (setf out (first-n (nth-value 0 (NNS data neighbors weights)) k))
-                (if (eq k 1)
-                    (setf out (car out)))
-                out)
-            (mapcar #'(lambda (input) (KNN input k tree-nodes kd-tree)) data))))
+                (setf branch-id (branch-posn data tree-nodes))
+                (setf main-branch branch-id)
+                (while flag
+                    (setf neighborhood (nth branch-id kd-tree))
+                    (setf positions (nth branch-id tree-posns))
+                    (if (equal neighborhood nil)
+                        (progn
+                            (setf branch-id 
+                                (list-wrap (wedge-sum main-branch search-count) 0 numbranches))
+                            (setf search-count (+ search-count 1)))
+                        (setf flag nil)))
+                (let*
+                    (
+                        (nns-vals nil)
+                        (nns-posn nil))
+                    (setf neighbors (multiple-value-list (nns data neighborhood weights)))
+                    (setf nns-vals (first-n (car neighbors) k))
+                    (setf nns-posn (first-n (posn-match positions (second neighbors)) k))
+                    (values-list (list nns-vals nns-posn))))
+            (values-list (mat-trans (mapcar #'(lambda (in) (multiple-value-list (KNN in tree-nodes kd-tree tree-posns k weights))) data))))))
 
 ;--------------- Markov-build ---------------
 (defmethod! Markov-build ((data list) (order integer))
